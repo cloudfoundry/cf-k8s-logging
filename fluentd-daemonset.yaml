@@ -2,25 +2,25 @@ apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: pas-system # todo: PAS
+  namespace: pas-system # PAS4K8s namespace
   labels:
-    k8s-app: fluentd-logging # todo: make this something good
+    k8s-app: fluentd-app-logging
     version: v1
 spec:
   template:
     metadata:
       labels:
-        k8s-app: fluentd-logging # todo: make this something good
+        k8s-app: fluentd-app-logging
         version: v1
     spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       imagePullSecrets:
-      - name: image-registry-credentials # todo: PAS (is it okay to re-use?)
+      - name: image-registry-credentials # Created by PAS4K8s
       containers:
       - name: fluentd
-        image: harbor.poway.cf-app.com/library/melenatest:0.6 # todo: interpolate?
+        image: harbor.SYSTEM_DOMAIN/library/cf-k8s-logging:TAG
         resources:
           limits:
             memory: 200Mi
@@ -28,7 +28,7 @@ spec:
             cpu: 100m
             memory: 200Mi
         volumeMounts:
-        - name: varvcapstore
+        - name: varvcapstore  # Because of PKS-based PAS4K8s
           mountPath: /var/vcap/store
         - name: varlibdockercontainers
           mountPath: /var/lib/docker/containers
