@@ -6,7 +6,6 @@
 1. Login to docker registry (password is in credentials tab in Harbor tile of OpsMan)
    `docker login harbor.SYSTEM_DOMAIN:443 -u admin`
 1. Update the fluent.conf file output section with your log destination and protocol
-1. Clone git@github.com:loggregator/fluentd-syslog-rfc5424.git to fluent-plugin-syslog_rfc5424 in this directory
 1. Build your image with tags for Harbor
    `docker build . --tag harbor.SYSTEM_DOMAIN:443/library/cf-k8s-logging:TAG`
 1. Push to Harbor
