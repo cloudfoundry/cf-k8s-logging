@@ -13,12 +13,15 @@
 1. Modify the fluentd-daemonset
 1. Login to PKS `pks login -a https://api.SYSTEM_DOMAIN -k -u admin` with the UAA admin
 1. Get credentials for the pks cluster `pks get-credentials CLUSTER-NAME` (which allows you to use `kubectl`)
-1. Create a thing that makes kubectl accept the harbor
+1. Create a docker registry secret
 ```
+kubectl create \
+  secret docker-registry image-registry-credentials \
   --docker-server="harbor.SYSTEM_DOMAIN:443"  \
   --docker-username="admin" \
   --docker-password="UAA-ADMIN"
 ```
+
 1. Deploy the DaemonSet to a PAS4K8s:
 ```
 kubectl apply -f fluentd-daemonset.yaml
