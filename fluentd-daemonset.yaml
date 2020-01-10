@@ -33,6 +33,9 @@ spec:
         - name: varlibdockercontainers
           mountPath: /var/lib/docker/containers
           readOnly: true
+        - mountPath: /ca
+          name: ca
+          readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
       - name: varvcapstore
@@ -41,3 +44,6 @@ spec:
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
+      - name: ca
+        secret:
+          secretName: log-cache-ca
