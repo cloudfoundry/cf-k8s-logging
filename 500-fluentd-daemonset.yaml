@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
@@ -13,6 +14,7 @@ spec:
         k8s-app: fluentd-app-logging
         version: v1
     spec:
+      serviceAccountName: fluentd-service-account
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
@@ -20,7 +22,7 @@ spec:
       - name: image-registry-credentials # Created by PAS4K8s
       containers:
       - name: fluentd
-        image: harbor.SYSTEM_DOMAIN/library/cf-k8s-logging:TAG
+        image: harbor.poway.cf-app.com:443/library/cf-k8s-logging:0.35
         resources:
           limits:
             memory: 200Mi
@@ -28,20 +30,29 @@ spec:
             cpu: 100m
             memory: 200Mi
         volumeMounts:
+        - name: fluentd-config
+          mountPath: /fluentd/etc
+        - name: varlog
+          mountPath: /var/log
         - name: varvcapstore  # Because of PKS-based PAS4K8s
           mountPath: /var/vcap/store
-        - name: varlibdockercontainers
+        - name: dockercontainers
           mountPath: /var/lib/docker/containers
-          readOnly: true
         - mountPath: /ca
           name: ca
           readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+      - name: varlog
+        hostPath:
+          path: /var/log
       - name: varvcapstore
         hostPath:
           path: /var/vcap/store
-      - name: varlibdockercontainers
+      - name: dockercontainers
         hostPath:
           path: /var/lib/docker/containers
       - name: ca

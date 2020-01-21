@@ -27,7 +27,5 @@ RUN buildDeps="sudo make gcc g++ libc-dev libffi-dev" \
     && gem sources --clear-all \
     && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
-COPY ./fluent.conf /fluentd/etc/
-
 WORKDIR /fluentd
-ENTRYPOINT bundle exec fluentd -c /fluentd/etc/fluent.conf
+ENTRYPOINT bundle exec fluentd -c /fluentd/etc/fluentd.conf
