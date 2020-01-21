@@ -26,7 +26,7 @@ data:
 
     <match **>
      @type syslog_rfc5424
-     host log-cache-ingress.pas-system.svc.cluster.local
+     host log-cache-syslog
      port 8082
      transport tls
      trusted_ca_path /ca/tls.crt
