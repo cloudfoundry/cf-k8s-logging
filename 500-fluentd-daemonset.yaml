@@ -5,24 +5,22 @@ metadata:
   name: fluentd
   namespace: pas-system # PAS4K8s namespace
   labels:
-    k8s-app: fluentd-app-logging
+    app: fluentd
     version: v1
 spec:
   template:
     metadata:
       labels:
-        k8s-app: fluentd-app-logging
+        app: fluentd
         version: v1
     spec:
       serviceAccountName: fluentd-service-account
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
-      imagePullSecrets:
-      - name: image-registry-credentials # Created by PAS4K8s
       containers:
       - name: fluentd
-        image: harbor.poway.cf-app.com:443/library/cf-k8s-logging:0.35
+        image: logcache/cf-k8s-logging
         resources:
           limits:
             memory: 200Mi
