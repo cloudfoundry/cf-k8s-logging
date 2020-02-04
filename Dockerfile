@@ -28,4 +28,4 @@ RUN buildDeps="sudo make gcc g++ libc-dev libffi-dev" \
     && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
 WORKDIR /fluentd
-ENTRYPOINT bundle exec fluentd -c /fluentd/etc/fluentd.conf
+ENTRYPOINT bundle exec fluentd ${FLUENTD_FLAGS} -c /fluentd/etc/fluentd.conf
