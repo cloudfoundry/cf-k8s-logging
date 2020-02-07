@@ -1,12 +1,13 @@
+#@ load("@ytt:data", "data")
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: log-cache
-  namespace: pas-system
+  namespace: #@ data.values.system_namespace
 spec:
   selector:
     app: log-cache
-  ports:
+  ports: #! this is a comment
   - protocol: TCP
     port: 8081

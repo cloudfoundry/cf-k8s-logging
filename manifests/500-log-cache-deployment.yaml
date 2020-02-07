@@ -1,9 +1,10 @@
+#@ load("@ytt:data", "data")
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: log-cache
-  namespace: pas-system
+  namespace: #@ data.values.system_namespace
   labels:
     app: log-cache
 spec:
@@ -18,7 +19,7 @@ spec:
     spec:
       containers:
       - name: syslog-server
-        image: logcache/syslog-server
+        image: #@ data.values.images.syslog_server
         ports:
         - containerPort: 8082
         env:
@@ -38,7 +39,7 @@ spec:
           name: metrics-certs
           readOnly: true
       - name: log-cache
-        image: logcache/log-cache
+        image: #@ data.values.images.log_cache
         volumeMounts:
         - mountPath: /ca
           name: ca
@@ -50,7 +51,7 @@ spec:
           name: metrics-certs
           readOnly: true
       - name: gateway
-        image: logcache/log-cache-gateway
+        image: #@ data.values.images.log_cache_gateway
         ports:
         - containerPort: 8081
         env:

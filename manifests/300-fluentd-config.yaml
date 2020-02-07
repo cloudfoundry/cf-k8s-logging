@@ -1,8 +1,10 @@
+#@ load("@ytt:data", "data")
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: pas-system
+  namespace: #@ data.values.system_namespace
 data:
   fluentd.conf: |
     # Inputs
