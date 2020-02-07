@@ -1,3 +1,4 @@
+#@ load("@ytt:data", "data")
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
