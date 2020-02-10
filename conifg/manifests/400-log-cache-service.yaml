@@ -8,6 +8,7 @@ metadata:
 spec:
   selector:
     app: log-cache
-  ports: #! this is a comment
+  ports:
   - protocol: TCP
     port: 8081
+    name: http
