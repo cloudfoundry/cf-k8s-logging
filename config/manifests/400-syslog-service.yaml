@@ -9,5 +9,6 @@ spec:
   selector:
     app: log-cache
   ports:
-  - protocol: TCP
+  - name: https
+    protocol: TCP
     port: 8082
