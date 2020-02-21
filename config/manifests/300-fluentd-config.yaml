@@ -8,6 +8,10 @@ metadata:
 data:
   fluentd.conf: |
     # Inputs
+    <match kubernetes.var.log.containers.fluentd**>
+      @type null
+    </match>
+
     <source>
       @type tail
       @id in_tail_container_logs
@@ -15,8 +19,16 @@ data:
       pos_file /var/log/fluentd-containers.log.pos
       tag kubernetes.*
       <parse>
-        @type json
-        time_format %Y-%m-%dT%H:%M:%S.%NZ
+        @type multi_format
+        <pattern>
+          format json
+          time_key time
+          time_format %Y-%m-%dT%H:%M:%S.%NZ
+        </pattern>
+        <pattern>
+          format /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+          time_format %Y-%m-%dT%H:%M:%S.%N%:z
+        </pattern>
       </parse>
       read_from_head true
     </source>
