@@ -43,9 +43,6 @@ spec:
         - mountPath: /ca
           name: ca
           readOnly: true
-        - mountPath: /external-certs
-          name: external-certs
-          readOnly: true
         - mountPath: /metrics-certs
           name: metrics-certs
           readOnly: true
@@ -123,7 +120,3 @@ spec:
       - name: system-ca
         secret:
           secretName: system-ca
-      - name: external-certs
-        secret:
-          secretName: log-cache-external-certs
-
