@@ -8,12 +8,44 @@ resources:
     ignore_paths:
     - lib/fluent-plugin-syslog_rfc5424/version.rb
 
+- name: log-cache-release
+  type: git
+  source:
+    branch: develop
+    uri: git@github.com:cloudfoundry/log-cache-release
+    private_key: ((cf-loggregator-oauth-bot-key))
+
 - name: fluentd-syslog-push
   type: git
   source:
     branch: master
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
+
+- name: syslog-server-docker
+  type: docker-image
+  source:
+    username: ((logcache-docker.username))
+    password: ((logcache-docker.password))
+    repository: logcache/syslog-server
+- name: log-cache-docker
+  type: docker-image
+  source:
+    username: ((logcache-docker.username))
+    password: ((logcache-docker.password))
+    repository: logcache/log-cache
+- name: log-cache-gateway-docker
+  type: docker-image
+  source:
+    username: ((logcache-docker.username))
+    password: ((logcache-docker.password))
+    repository: logcache/log-cache-gateway
+- name: cf-auth-proxy-docker
+  type: docker-image
+  source:
+    username: ((logcache-docker.username))
+    password: ((logcache-docker.password))
+    repository: logcache/log-cache-cf-auth-proxy
 
 jobs:
   - name: test-ruby-plugin
@@ -95,4 +127,51 @@ jobs:
             bundle install
             gem build fluent-plugin-syslog_rfc5424
             gem push *.gem
+
+  - name: test-log-cache
+    plan:
+    - get: log-cache-release
+      trigger: true
+
+    - task: test-log-cache
+      config:
+        image_resource:
+          type: registry-image
+          source: { repository: golang }
+        platform: linux
+        inputs:
+        - name: log-cache-release
+        run:
+          path: /bin/bash
+          args:
+          - -c
+          - |
+            cd log-cache-release/src
+            go test -mod=vendor ./...
+
+  - name: build-images
+    plan:
+    - get: log-cache-release
+      trigger: true
+      passed: ["test-log-cache"]
+    - in_parallel:
+      - put: syslog-server-docker
+        params:
+          dockerfile: log-cache-release/src/cmd/syslog-server/Dockerfile
+          build: log-cache-release/src
+      - put: log-cache-docker
+        params:
+          dockerfile: log-cache-release/src/cmd/log-cache/Dockerfile
+          build: log-cache-release/src
+      - put: log-cache-gateway-docker
+        params:
+          dockerfile: log-cache-release/src/cmd/gateway/Dockerfile
+          build: log-cache-release/src
+      - put: cf-auth-proxy-docker
+        params:
+          dockerfile: log-cache-release/src/cmd/cf-auth-proxy/Dockerfile
+          build: log-cache-release/src
+
+
+
 
