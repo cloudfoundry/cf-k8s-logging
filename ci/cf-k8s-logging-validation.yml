@@ -1,4 +1,17 @@
+resource_types:
+- name: pull-request
+  type: docker-image
+  source:
+    repository: teliaoss/github-pr-resource
+
 resources:
+- name: runtime-ci
+  type: git
+  icon: github-box
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/runtime-ci.git
+
 - name: fluentd-syslog
   type: git
   source:
@@ -22,24 +35,73 @@ resources:
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
 
+- name: cf-k8s-logging
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:cloudfoundry/cf-k8s-logging
+    private_key: ((cf-loggregator-oauth-bot-key))
+
+- name: cf-k8s-logging-image
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:cloudfoundry/cf-k8s-logging
+    private_key: ((cf-loggregator-oauth-bot-key))
+    paths:
+    - Dockerfile
+    - Gemfile
+
+- name: cf-for-k8s
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:cloudfoundry/cf-for-k8s
+    private_key: ((cf-loggregator-oauth-bot-key))
+
+- name: cf-k8s-logging-push
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:cloudfoundry/cf-k8s-logging
+    private_key: ((cf-loggregator-oauth-bot-key))
+
+- name: cf-k8s-logging-pr
+  type: pull-request
+  source:
+    access_token: ((github-access-token))
+    repository: cloudfoundry/cf-k8s-logging
+    disable_forks: true
+
+- name: github-tool    # https://hub.github.com
+  type: github-release
+  source:
+    user: github
+    repository: hub
+    pre_release: true
+    access_token: ((github-access-token))
+
 - name: syslog-server-docker
   type: docker-image
   source:
     username: ((logcache-docker.username))
     password: ((logcache-docker.password))
     repository: logcache/syslog-server
+
 - name: log-cache-docker
   type: docker-image
   source:
     username: ((logcache-docker.username))
     password: ((logcache-docker.password))
     repository: logcache/log-cache
+
 - name: log-cache-gateway-docker
   type: docker-image
   source:
     username: ((logcache-docker.username))
     password: ((logcache-docker.password))
     repository: logcache/log-cache-gateway
+
 - name: cf-auth-proxy-docker
   type: docker-image
   source:
@@ -47,6 +109,12 @@ resources:
     password: ((logcache-docker.password))
     repository: logcache/log-cache-cf-auth-proxy
 
+- name: cf-k8s-logging-docker
+  type: docker-image
+  source:
+    username: ((logcache-docker.username))
+    password: ((logcache-docker.password))
+    repository: logcache/cf-k8s-logging
 jobs:
   - name: test-ruby-plugin
     plan:
@@ -128,6 +196,42 @@ jobs:
             gem build fluent-plugin-syslog_rfc5424
             gem push *.gem
 
+  - name: bump-logging-gemfile
+    plan:
+    - get: fluentd-syslog
+      resource: fluentd-syslog-push
+      passed: ["release-gem"]
+      trigger: true
+    - get: cf-k8s-logging
+    - task: update-gemfile-version
+      config:
+        image_resource:
+          type: registry-image
+          source: { repository: ruby, tag: 2.7 }
+        platform: linux
+        inputs:
+        - name: fluentd-syslog
+        - name: cf-k8s-logging
+        outputs:
+        - name: cf-k8s-logging-committed
+          path: cf-k8s-logging
+        params:
+          GITHUB_SSH_KEY: ((cf-loggregator-oauth-bot-key))
+          GITHUB_TOKEN: ((github-access-token))
+        run:
+          path: /bin/bash
+          args:
+          - -c
+          - |
+            pushd fluentd-syslog
+              version=$(rake version)
+            popd
+
+            sed -i "/gem \"fluent-plugin-syslog_rfc5424\"/c\gem \"fluent-plugin-syslog_rfc5424\", \"$version\"" cf-k8s-logging/Gemfile
+    - put: cf-k8s-logging-push
+      params:
+        repository: cf-k8s-logging-committed
+
   - name: test-log-cache
     plan:
     - get: log-cache-release
@@ -150,7 +254,10 @@ jobs:
             go test -mod=vendor ./...
 
   - name: build-images
+    serial_groups: ["update-k8s-logging"]
     plan:
+    - get: cf-k8s-logging-image
+      trigger: true
     - get: log-cache-release
       trigger: true
       passed: ["test-log-cache"]
@@ -171,7 +278,229 @@ jobs:
         params:
           dockerfile: log-cache-release/src/cmd/cf-auth-proxy/Dockerfile
           build: log-cache-release/src
+      - put: cf-k8s-logging-docker
+        params:
+          dockerfile: cf-k8s-logging-image/Dockerfile
+          build: cf-k8s-logging-image
 
+  - name: update-logging-images
+    serial_groups: ["update-k8s-logging"]
+    plan:
+    - get: syslog-server-docker
+      passed: ["build-images"]
+    - get: log-cache-docker
+      passed: ["build-images"]
+    - get: log-cache-gateway-docker
+      passed: ["build-images"]
+    - get: cf-auth-proxy-docker
+      passed: ["build-images"]
+    - get: cf-k8s-logging-docker
+      passed: ["build-images"]
+    - get: cf-k8s-logging
+    - get: github-tool
+    - task: update-logging-images
+      config:
+        image_resource:
+          type: registry-image
+          source: { repository: golang }
+        platform: linux
+        inputs:
+        - name: syslog-server-docker
+        - name: log-cache-docker
+        - name: log-cache-gateway-docker
+        - name: cf-auth-proxy-docker
+        - name: cf-k8s-logging
+        - name: github-tool
+        - name: cf-k8s-logging-docker
+        params:
+          GITHUB_SSH_KEY: ((cf-loggregator-oauth-bot-key))
+          GITHUB_TOKEN: ((github-access-token))
+        run:
+          path: /bin/bash
+          args:
+          - -c
+          - |
+            #setup hub cli
+            pushd github-tool   # unpack Hub tool TGZ file
+              for t in $(ls *.tgz); do tar -xzf $t -C .; done
+              rm *.tgz && mv hub-linux-amd64*/ hub
+              export PATH=$PATH:$PWD/hub/bin
+            popd
 
+            # get the digests
+            syslog_digest=$(cat syslog-server-docker/digest)
+            log_cache_digest=$(cat log-cache-docker/digest)
+            log_cache_gateway_digest=$(cat log-cache-gateway-docker/digest)
+            cf_auth_proxy_digest=$(cat cf-auth-proxy-docker/digest)
+            cf_k8s_logging_digest=$(cat cf-k8s-logging-docker/digest)
 
+            #set the digests
+            sed -i "/syslog_server: /c\  syslog_server: logcache/syslog-server@$syslog_digest" cf-k8s-logging/config/values.yml
+            sed -i "/log_cache: /c\  log_cache: logcache/log-cache@$log_cache_digest" cf-k8s-logging/config/values.yml
+            sed -i "/log_cache_gateway: /c\  log_cache_gateway: logcache/log-cache-gateway@$log_cache_gateway_digest" cf-k8s-logging/config/values.yml
+            sed -i "/cf_auth_proxy: /c\  cf_auth_proxy: logcache/log-cache-cf-auth-proxy@$cf_auth_proxy_digest" cf-k8s-logging/config/values.yml
+            sed -i "/fluent: /c\  fluent: logcache/cf-k8s-logging@$cf_k8s_logging_digest" cf-k8s-logging/config/values.yml
 
+            cat cf-k8s-logging/config/values.yml
+
+            # setup ssh for reading from github
+            eval "$(ssh-agent -s)"
+            mkdir -p ~/.ssh
+            echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+            ssh-add <(echo "$GITHUB_SSH_KEY")
+
+            git config --global user.email "cf-loggregator@pivotal.io"
+            git config --global user.name "Log Egress CI"
+
+            branch_name=bump-images-$(date +%N)
+            pushd cf-k8s-logging
+              git checkout -b $branch_name
+              git add -A
+              git commit -m "ci - bump images"
+              git push --set-upstream origin $branch_name
+
+              hub pull-request -m "update docker dependencies" -b master -h $branch_name
+            popd
+
+  - name: run-tests-on-cf-for-k8s-pr
+    public: true
+    serial: true
+    plan:
+    - in_parallel:
+      - get: runtime-ci
+      - get: cf-for-k8s
+      - get: cf-k8s-logging-pr
+        params:
+          integration_tool: rebase
+        trigger: true
+        version: every
+    - put: cf-k8s-logging-pr
+      params:
+        path: cf-k8s-logging-pr
+        status: pending
+        context: tests
+    - task: delete-cf
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+        run:
+          path: /bin/bash
+          args:
+          - -ec
+          - |
+            export KUBECONFIG=kube-config.yml
+            gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
+            gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+
+            kapp delete -a cf --yes
+
+    - task: vendir-logging
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+        inputs:
+          - name: cf-for-k8s
+          - name: cf-k8s-logging-pr
+        outputs:
+        - name: cf-for-k8s-with-logging
+          path: cf-for-k8s
+        run:
+          path: /bin/bash
+          args:
+          - -c
+          - |
+            cd cf-k8s-logging-pr
+            CF_FOR_K8s_DIR=../cf-for-k8s ./scripts/bump-cf-for-k8s.sh
+
+    - task: install-cf
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+        inputs:
+          - name: cf-for-k8s-with-logging
+        outputs:
+        - name: env-metadata
+        params:
+          DNS_DOMAIN: ((ci_k8s_domain))
+          DNS_ZONE_NAME: ((ci_k8s_dns_zone_name))
+        run:
+          path: /bin/bash
+          args:
+          - -ec
+          - |
+            export KUBECONFIG=kube-config.yml
+            gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
+            gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+
+            cf-for-k8s-with-logging/hack/confirm-network-policy.sh '((ci_k8s_gke_cluster_name))' '((ci_k8s_gcp_project_zone))'
+            echo "Generating install values..."
+            cf-for-k8s-with-logging/hack/generate-values.sh "${DNS_DOMAIN}" > cf-install-values.yml
+            echo "Installing CF..."
+            cf-for-k8s-with-logging/bin/install-cf.sh cf-install-values.yml
+            bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
+            echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
+            echo "Configuring DNS..."
+            cf-for-k8s-with-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
+
+    - task: run-smoke-test
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-test-runner}
+        inputs:
+          - name: cf-for-k8s-with-logging
+          - name: env-metadata
+        run:
+          path: /bin/sh
+          args:
+          - -ec
+          - |
+            DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
+            export SMOKE_TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
+            export SMOKE_TEST_APPS_DOMAIN="${DNS_DOMAIN}"
+            export SMOKE_TEST_USERNAME=admin
+            export SMOKE_TEST_PASSWORD=$(cat env-metadata/cf-admin-password.txt)
+            cf-for-k8s-with-logging/hack/run-smoke-tests.sh
+
+    - task: delete-cf
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+        run:
+          path: /bin/bash
+          args:
+          - -ec
+          - |
+            export KUBECONFIG=kube-config.yml
+            gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
+            gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+
+            kapp delete -a cf --yes
+      on_success:
+        do:
+        - put: cf-k8s-logging-pr
+          params:
+            path: cf-k8s-logging-pr
+            status: success
+            context: tests
+      on_failure:
+        do:
+        - task: write-pr-check-failure-comment
+          file: runtime-ci/tasks/write-pr-check-failure-comment/task.yml
+          input_mapping:
+            pull-request: cf-k8s-logging-pr
+        - put: cf-k8s-logging-pr
+          params:
+            path: cf-k8s-logging-pr
+            status: failure
+            context: tests
+            comment_file: pull-request-comment/comment
