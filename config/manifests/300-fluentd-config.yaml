@@ -18,6 +18,7 @@ data:
       path /var/log/containers/*.log
       pos_file /var/log/fluentd-containers.log.pos
       tag kubernetes.*
+      refresh_interval 1
       <parse>
         @type multi_format
         <pattern>
@@ -60,6 +61,6 @@ data:
 
      <buffer>
        @type memory
-       flush_interval 10s
+       flush_mode immediate
      </buffer>
     </match>
