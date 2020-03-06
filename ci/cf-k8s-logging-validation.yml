@@ -395,7 +395,12 @@ jobs:
             gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
 
             kapp delete -a cf --yes
-
+    # Puts do an implicit check so this builds the image and immediately makes
+    # it available to the next task and dockerhub
+    - put: cf-k8s-logging-docker
+      params:
+        dockerfile: cf-k8s-logging-pr/Dockerfile
+        build: cf-k8s-logging-pr
     - task: vendir-logging
       config:
         platform: linux
@@ -403,6 +408,7 @@ jobs:
           type: docker-image
           source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
         inputs:
+          - name: cf-k8s-logging-docker
           - name: cf-for-k8s
           - name: cf-k8s-logging-pr
         outputs:
@@ -414,6 +420,8 @@ jobs:
           - -c
           - |
             cd cf-k8s-logging-pr
+            new_fluent_image_digest=$(cat ../cf-k8s-logging-docker/digest)
+            sed -i "/fluent: /c\  fluent: logcache/cf-k8s-logging@new_fluent_image_digest" ../cf-for-k8s/config/values.yml
             CF_FOR_K8s_DIR=../cf-for-k8s ./scripts/bump-cf-for-k8s.sh
 
     - task: install-cf
