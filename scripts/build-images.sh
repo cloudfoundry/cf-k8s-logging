@@ -1,5 +1,4 @@
 REPOSITORY=${REPOSITORY:-logcache}
-
 docker build -t $REPOSITORY/log-cache:latest vendor/log-cache/src -f vendor/log-cache/src/cmd/log-cache/Dockerfile
 docker build -t $REPOSITORY/log-cache-gateway:latest vendor/log-cache/src -f vendor/log-cache/src/cmd/gateway/Dockerfile
 docker build -t $REPOSITORY/log-cache-cf-auth-proxy:latest vendor/log-cache/src -f vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
