@@ -1,0 +1,68 @@
+---
+name: log-cache
+
+templates:
+  bpm.yml.erb: config/bpm.yml
+  ca.crt.erb: config/certs/ca.crt
+  log_cache.crt.erb: config/certs/log_cache.crt
+  log_cache.key.erb: config/certs/log_cache.key
+  indicators.yml.erb: config/indicators.yml
+  prom_scraper_config.yml.erb: config/prom_scraper_config.yml
+  metrics_ca.crt.erb: config/certs/metrics_ca.crt
+  metrics.crt.erb: config/certs/metrics.crt
+  metrics.key.erb: config/certs/metrics.key
+
+packages:
+- log-cache
+
+provides:
+- name: log-cache
+  type: log-cache
+  properties:
+  - port
+  - tls
+  - disabled
+
+consumes:
+- name: log-cache
+  type: log-cache
+
+properties:
+  port:
+    description: "The port for the log-cache to listen on"
+    default: 8080
+
+  memory_limit_percent:
+    description: "Percentage of system memory to use for the cache. Must be an integer."
+    default: 50
+
+  max_per_source:
+    description: "The maximum number of items stored in LogCache per source."
+    default: 100000
+
+  promql.query_timeout:
+    description: "The maximum allowed runtime for a single PromQL query. Smaller timeouts are recommended."
+    default: "10s"
+
+  tls.ca_cert:
+    description: "The Certificate Authority for log cache mutual TLS."
+  tls.cert:
+    description: "The client cert for log cache mutual TLS."
+  tls.key:
+    description: "The client private key for log cache mutual TLS."
+
+  metrics.port:
+    description: "The port for LogCache to bind a health endpoint"
+    default: 6060
+  metrics.ca_cert:
+    description: "TLS CA cert to verify requests to metrics endpoint."
+  metrics.cert:
+    description: "TLS certificate for metrics server signed by the metrics CA"
+  metrics.key:
+    description: "TLS private key for metrics server signed by the metrics CA"
+  metrics.server_name:
+    description: "The server name used in the scrape configuration for the metrics endpoint"
+
+  disabled:
+    default: false
+    description: "Turns off log cache."

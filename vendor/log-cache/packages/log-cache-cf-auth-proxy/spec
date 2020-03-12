@@ -1,0 +1,13 @@
+---
+name: log-cache-cf-auth-proxy
+
+dependencies:
+- golang-1-linux
+
+files:
+- cmd/cf-auth-proxy/**/*.go
+- internal/**/*.go
+- pkg/**/*.go
+- vendor/**/*
+- go.mod
+- go.sum

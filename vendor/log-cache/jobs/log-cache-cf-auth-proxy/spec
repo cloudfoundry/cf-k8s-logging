@@ -1,0 +1,76 @@
+---
+name: log-cache-cf-auth-proxy
+templates:
+  bpm.yml.erb: config/bpm.yml
+  cc_ca.crt.erb: config/certs/cc_ca.crt
+  uaa_ca.crt.erb: config/certs/uaa_ca.crt
+  external.crt.erb: config/certs/external.crt
+  external.key.erb: config/certs/external.key
+  proxy_ca.crt.erb: config/certs/proxy_ca.crt
+  prom_scraper_config.yml.erb: config/prom_scraper_config.yml
+  metrics_ca.crt.erb: config/certs/metrics_ca.crt
+  metrics.crt.erb: config/certs/metrics.crt
+  metrics.key.erb: config/certs/metrics.key
+
+packages:
+- log-cache-cf-auth-proxy
+
+provides:
+- name: log-cache-cf-auth-proxy
+  type: log-cache-cf-auth-proxy
+  properties:
+  - proxy_port
+
+consumes:
+- name: log-cache
+  type: log-cache
+- name: log-cache-gateway
+  type: log-cache-gateway
+- name: cloud_controller
+  type: cloud_controller
+
+properties:
+  skip_cert_verify:
+    description: "Whether to accept invalid certs"
+    default: false
+  external_cert:
+    description: "The TLS cert for the auth proxy"
+  external_key:
+    description: "The TLS key for the auth proxy"
+  proxy_port:
+    description: "The port for the cf-auth-proxy to listen on"
+  security_event_log:
+    description: "When provided, the path to a file where security events will be logged"
+  proxy_ca_cert:
+    description: "The CA used to sign the certificates that the reverse proxy uses to talk to the gateway"
+  token_pruning_interval:
+    description: "The interval at which expired tokens are purged from the cache"
+    default: 60s
+  cache_expiration_interval:
+    description: "The expiration lifetime assigned to new cache entries"
+    default: 60s
+  cc.ca_cert:
+    description: "The CA for the internal api"
+  cc.common_name:
+    description: "The CN for the CA cert"
+  uaa.client_id:
+    description: "The client id to authenticate to UAA"
+  uaa.client_secret:
+    description: "The client secret to authenticate to UAA"
+  uaa.ca_cert:
+    description: "The CA for internal UAA api"
+  uaa.internal_addr:
+    description: "The endpoint used for the internal UAA api"
+
+  metrics.port:
+    description: "The port for the auth proxy to bind a health endpoint"
+    default: 6065
+  metrics.ca_cert:
+    description: "TLS CA cert to verify requests to metrics endpoint."
+  metrics.cert:
+    description: "TLS certificate for metrics server signed by the metrics CA"
+  metrics.key:
+    description: "TLS private key for metrics server signed by the metrics CA"
+  metrics.server_name:
+    description: "The server name used in the scrape configuration for the metrics endpoint"
+

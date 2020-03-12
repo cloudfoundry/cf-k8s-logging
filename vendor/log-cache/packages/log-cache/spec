@@ -1,0 +1,13 @@
+---
+name: log-cache
+
+dependencies:
+- golang-1-linux
+
+files:
+- cmd/log-cache/**/*.go
+- internal/**/*.go
+- pkg/**/*.go
+- vendor/**/*
+- go.mod
+- go.sum

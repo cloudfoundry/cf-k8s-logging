@@ -1,0 +1,14 @@
+---
+name: log-cache-gateway
+
+dependencies:
+- golang-1-linux
+
+files:
+- cmd/gateway/**/*.go
+- internal/**/*.go
+- pkg/**/*.go
+- vendor/**/*
+- go.mod
+- go.sum
+- version

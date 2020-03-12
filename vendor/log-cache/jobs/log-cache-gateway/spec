@@ -1,0 +1,48 @@
+---
+name: log-cache-gateway
+
+templates:
+  bpm.yml.erb: config/bpm.yml
+  ca.crt.erb: config/certs/ca.crt
+  log_cache.crt.erb: config/certs/log_cache.crt
+  log_cache.key.erb: config/certs/log_cache.key
+  proxy.crt.erb: config/certs/proxy.crt
+  proxy.key.erb: config/certs/proxy.key
+  prom_scraper_config.yml.erb: config/prom_scraper_config.yml
+  metrics_ca.crt.erb: config/certs/metrics_ca.crt
+  metrics.crt.erb: config/certs/metrics.crt
+  metrics.key.erb: config/certs/metrics.key
+
+packages:
+- log-cache-gateway
+
+provides:
+- name: log-cache-gateway
+  type: log-cache-gateway
+  properties:
+  - gateway_addr
+
+consumes:
+- name: log-cache
+  type: log-cache
+
+properties:
+  gateway_addr:
+    description: "The address for the log-cache-gateway to listen on"
+    default: "localhost:8081"
+  proxy_cert:
+    description: "The TLS cert for the proxy"
+  proxy_key:
+    description: "The TLS key for the proxy"
+
+  metrics.port:
+    description: "The port for the gateway to bind a health endpoint"
+    default: 6063
+  metrics.ca_cert:
+    description: "TLS CA cert to verify requests to metrics endpoint."
+  metrics.cert:
+    description: "TLS certificate for metrics server signed by the metrics CA"
+  metrics.key:
+    description: "TLS private key for metrics server signed by the metrics CA"
+  metrics.server_name:
+    description: "The server name used in the scrape configuration for the metrics endpoint"

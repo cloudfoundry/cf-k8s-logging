@@ -1,0 +1,46 @@
+---
+name: log-cache-nozzle
+
+templates:
+  bpm.yml.erb: config/bpm.yml
+  logs_provider.crt.erb: config/certs/logs_provider.crt
+  logs_provider.key.erb: config/certs/logs_provider.key
+  logs_provider_ca.crt.erb: config/certs/logs_provider_ca.crt
+  log_cache_ca.crt.erb: config/certs/log_cache_ca.crt
+  log_cache.crt.erb: config/certs/log_cache.crt
+  log_cache.key.erb: config/certs/log_cache.key
+  prom_scraper_config.yml.erb: config/prom_scraper_config.yml
+
+packages:
+- log-cache-nozzle
+
+provides:
+- name: log-cache-nozzle
+  type: log-cache-nozzle
+
+consumes:
+- name: reverse_log_proxy
+  type: reverse_log_proxy
+- name: log-cache
+  type: log-cache
+
+properties:
+  enabled:
+    description: "Enable Log Cache RLP Ingress"
+    default: true
+  logs_provider.tls.ca_cert:
+    description: "CA root required for key/cert verification to connect to the logs-provider"
+  logs_provider.tls.cert:
+    description: "TLS certificate for the logs-provider connection"
+  logs_provider.tls.key:
+    description: "TLS key for the logs-provider connection"
+
+  health_port:
+    description: "The port for the Nozzle to bind a health endpoint"
+    default: 6061
+  shard_id:
+    description: "The sharding group name to use for egress from RLP"
+    default: "log-cache"
+  selectors:
+    description: "A list of envelope types to read from RLP"
+    default: [log, gauge, counter, timer, event]

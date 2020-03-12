@@ -1,0 +1,13 @@
+apiVersion: vendir.k14s.io/v1alpha1
+directories:
+- contents:
+  - git:
+      commitTitle: Bump modules
+      sha: 348b914b4692db178ec44be488d1f9959535b85d
+    path: log-cache
+  - git:
+      commitTitle: intial commit
+      sha: 82d7dfdb7176302d18d08c1c15f0c94fbeb39d18
+    path: cf-k8s-logging-fluent
+  path: vendor
+kind: LockConfig

@@ -1,0 +1,37 @@
+<%
+  jobDir = "/var/vcap/jobs/log-cache"
+  certDir = "#{jobDir}/config/certs"
+
+  lc = link("log-cache")
+
+  sorted_cache_instances = lc.instances.sort_by {|i| i.address}
+  cache_addrs = sorted_cache_instances.map {|i| "#{i.address}:#{p('port')}"}
+  index = sorted_cache_instances.index(
+      sorted_cache_instances.find {|i| i.id == spec.id}
+  )
+%>
+---
+processes:
+- name: log-cache
+  executable: /var/vcap/packages/log-cache/log-cache
+  env:
+    ADDR:        "<%= ":#{p('port')}" %>"
+    MEMORY_LIMIT_PERCENT: "<%= p('memory_limit_percent') %>"
+    MAX_PER_SOURCE: "<%= p('max_per_source') %>"
+    QUERY_TIMEOUT: "<%= p('promql.query_timeout') %>"
+
+    CA_PATH:   "<%= "#{certDir}/ca.crt" %>"
+    CERT_PATH: "<%= "#{certDir}/log_cache.crt" %>"
+    KEY_PATH:  "<%= "#{certDir}/log_cache.key" %>"
+
+    # Cluster Configuration
+    NODE_INDEX: "<%= index %>"
+    NODE_ADDRS: "<%= cache_addrs.join(",") %>"
+
+    METRICS_PORT: <%= p("metrics.port") %>
+    METRICS_CA_FILE_PATH: "<%= certDir %>/metrics_ca.crt"
+    METRICS_CERT_FILE_PATH: "<%= certDir %>/metrics.crt"
+    METRICS_KEY_FILE_PATH: "<%= certDir %>/metrics.key"
+
+  limits:
+    open_files: 8192

@@ -1,0 +1,31 @@
+config/private.yml
+blobs
+dev_releases
+releases/*.tgz
+releases/**/*.tgz
+.dev_builds
+.final_builds/jobs/**/*.tgz
+.final_builds/packages/**/*.tgz
+.DS_Store
+.idea
+*.swp
+*~
+*#
+#*
+
+# Golang
+bin/
+
+# Bosh Deploys
+vars.yml
+deployment-vars.yml
+oss_sha
+css_sha
+
+# Golang Tools
+src/github.com/client9/misspell
+src/github.com/kisielk/gotool
+src/github.com/mdempsky/unconvert
+src/golang.org/x/tools
+
+

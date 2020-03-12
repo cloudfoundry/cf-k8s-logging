@@ -1,12 +1,13 @@
 # cf-k8s-logging
 
-### Requirements
-An existing CF for k8s environment with a `system_domain`.
+cf-k8s-logging contains the portions of cf-for-k8s which enable logging
+outcomes.
 
-### Installation
+### Development flow
 
-1. `scripts/generate-values.sh <system_domain> > /tmp/values.yml`
-1. `cd config/manifests && ytt -f . -f /tmp/values.yml > /tmp/logging-deploy.yml`
-1. `kapp -a cf-k8s-logging -f /tmp/logging-deploy.yml`
-1. See the logs from your CF pushed apps:
-`curl -k https://log-cache.<system_domain>/api/v1/read/<app-guid>`
+1. make updates needed (update vendir, update k8s files, etc).
+1. make local commit(should make reverting image tags easy)
+1. run build ./scripts/build-images.sh
+1. run ./scripts/bump-cf-for-k8s.sh
+1. follow cf-for-k8s deployment steps.
+

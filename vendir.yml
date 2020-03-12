@@ -1,0 +1,13 @@
+apiVersion: vendir.k14s.io/v1alpha1
+kind: Config
+directories:
+- path: vendor
+  contents:
+  - path: log-cache
+    git:
+      url: https://github.com/cloudfoundry/log-cache-release
+      ref: 348b914b4692db178ec44be488d1f9959535b85d
+  - path: cf-k8s-logging-fluent
+    git:
+      url: https://github.com/cloudfoundry/cf-k8s-logging-fluent
+      ref: 82d7dfdb7176302d18d08c1c15f0c94fbeb39d18

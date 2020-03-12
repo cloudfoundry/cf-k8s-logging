@@ -1,0 +1,13 @@
+---
+name: log-cache-nozzle
+
+dependencies:
+- golang-1-linux
+
+files:
+- cmd/nozzle/**/*.go
+- internal/**/*.go
+- pkg/**/*.go
+- vendor/**/*
+- go.mod
+- go.sum
