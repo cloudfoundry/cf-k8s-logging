@@ -18,8 +18,8 @@ cf_auth_proxy_digest=$(docker image inspect $REPOSITORY/log-cache-cf-auth-proxy:
 cf_k8s_logging_digest=$(docker image inspect $REPOSITORY/cf-k8s-logging:latest --format {{.Id}})
 
 #set the digests
-sed -i '' -e "s| syslog_server: .*| syslog_server: \"$REPOSITORY/syslog-server@$syslog_digest\"|" config/values.yml
-sed -i '' -e "s| log_cache: .*| log_cache: \"$REPOSITORY/log-cache@$log_cache_digest\"|" config/values.yml
-sed -i '' -e "s| log_cache_gateway: .*| log_cache_gateway: \"$REPOSITORY/log-cache-gateway@$log_cache_gateway_digest\"|" config/values.yml
-sed -i '' -e "s| cf_auth_proxy: .*| cf_auth_proxy: \"$REPOSITORY/log-cache-cf-auth-proxy@$cf_auth_proxy_digest\"|" config/values.yml
-sed -i '' -e "s| fluent: .*| fluent: \"$REPOSITORY/cf-k8s-logging@$cf_k8s_logging_digest\"|" config/values.yml
+sed -i '' -e "s| syslog_server:.*| syslog_server: \"$REPOSITORY/syslog-server@$syslog_digest\"|" config/values.yml
+sed -i '' -e "s| log_cache:.*| log_cache: \"$REPOSITORY/log-cache@$log_cache_digest\"|" config/values.yml
+sed -i '' -e "s| log_cache_gateway:.*| log_cache_gateway: \"$REPOSITORY/log-cache-gateway@$log_cache_gateway_digest\"|" config/values.yml
+sed -i '' -e "s| cf_auth_proxy:.*| cf_auth_proxy: \"$REPOSITORY/log-cache-cf-auth-proxy@$cf_auth_proxy_digest\"|" config/values.yml
+sed -i '' -e "s| fluent:.*| fluent: \"$REPOSITORY/cf-k8s-logging@$cf_k8s_logging_digest\"|" config/values.yml
