@@ -1,5 +1,5 @@
-FROM fluent/fluentd:v1.7.4-debian-1.0
-
+FROM ubuntu:bionic
+RUN apt update && apt install -y ruby ruby-dev
 USER root
 WORKDIR /home/fluent
 ENV PATH /fluentd/vendor/bundle/ruby/2.6.0/bin:$PATH

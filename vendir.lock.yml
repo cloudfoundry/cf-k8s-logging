@@ -6,8 +6,8 @@ directories:
       sha: 348b914b4692db178ec44be488d1f9959535b85d
     path: log-cache
   - git:
-      commitTitle: intial commit
-      sha: 82d7dfdb7176302d18d08c1c15f0c94fbeb39d18
+      commitTitle: update image to use ubuntu bionic
+      sha: 2f9c91e826f4efc5e8e91a833bfd8061d5d4431a
     path: cf-k8s-logging-fluent
   path: vendor
 kind: LockConfig
