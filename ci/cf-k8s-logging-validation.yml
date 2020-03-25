@@ -286,7 +286,7 @@ jobs:
         outputs:
         - name: env-metadata
         params:
-          DNS_DOMAIN: ((ci_k8s_domain))
+          DNS_ROOT_DOMAIN: ((ci_k8s_domain))
           DNS_ZONE_NAME: ((ci_k8s_dns_zone_name))
         run:
           path: /bin/bash
@@ -294,18 +294,27 @@ jobs:
           - -ec
           - |
             export KUBECONFIG=kube-config.yml
-            gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
-            gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+            cluster_name=((ci_k8s_gke_cluster_name))
+            echo '((ci_k8s_gcp_service_account_json))' > gcp-service-account.json
+            gcloud auth activate-service-account --key-file=gcp-service-account.json --project='((ci_k8s_gcp_project_name))' >/dev/null 2>&1
+            gcloud container clusters get-credentials "${cluster_name}" --zone '((ci_k8s_gcp_project_zone))' >/dev/null 2>&1
 
-            cf-for-k8s-with-logging/hack/confirm-network-policy.sh '((ci_k8s_gke_cluster_name))' '((ci_k8s_gcp_project_zone))'
+            export DNS_DOMAIN="${cluster_name}.${DNS_ROOT_DOMAIN}"
+            cf-for-k8s-with-logging/hack/confirm-network-policy.sh "${cluster_name}" '((ci_k8s_gcp_project_zone))'
             echo "Generating install values..."
-            cf-for-k8s-with-logging/hack/generate-values.sh "${DNS_DOMAIN}" > cf-install-values.yml
+            cf-for-k8s-with-logging/hack/generate-values.sh -d "${DNS_DOMAIN}" -g gcp-service-account.json > cf-install-values.yml
             echo "Installing CF..."
             cf-for-k8s-with-logging/bin/install-cf.sh cf-install-values.yml
             bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
             echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
             echo "Configuring DNS..."
             cf-for-k8s-with-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
+
+            kubectl create -n cf-workloads secret docker-registry registry-credentials \
+                  --docker-server=https://gcr.io \
+                  --docker-username=_json_key \
+                  --docker-email=cf-loggregator@pivotal.io \
+                  --docker-password="$(cat gcp-service-account.json)"
 
     - task: run-smoke-test
       config:
