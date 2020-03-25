@@ -42,6 +42,20 @@ resources:
     uri: git@github.com:cloudfoundry/cf-for-k8s
     private_key: ((cf-loggregator-oauth-bot-key))
 
+- name: cf-k8s-logging-master
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:cloudfoundry/cf-k8s-logging
+    private_key: ((cf-loggregator-oauth-bot-key))
+
+- name: cf-k8s-logging-github-release
+  type: github-release
+  source:
+    owner: cloudfoundry
+    repository: cf-k8s-logging
+    access_token: ((access-token))
+
 - name: cf-k8s-logging-pr
   type: pull-request
   source:
@@ -373,3 +387,76 @@ jobs:
             status: failure
             context: tests
             comment_file: pull-request-comment/comment
+
+  - name: create-release
+    plan:
+    - get: cf-k8s-logging
+      resource: cf-k8s-logging-master
+    - in_parallel:
+      - put: cf-k8s-logging-docker
+        params:
+          build: cf-k8s-logging/vendor/cf-k8s-logging-fluent
+      - put: syslog-server-docker
+        params:
+          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
+          build: cf-k8s-logging/vendor/log-cache/src
+      - put: log-cache-docker
+        params:
+          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
+          build: cf-k8s-logging/vendor/log-cache/src
+      - put: log-cache-gateway-docker
+        params:
+          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
+          build: cf-k8s-logging/vendor/log-cache/src
+      - put: cf-auth-proxy-docker
+        params:
+          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
+          build: cf-k8s-logging/vendor/log-cache/src
+    - task: prepare-release
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+        inputs:
+          - name: cf-k8s-logging-docker
+          - name: syslog-server-docker
+          - name: log-cache-docker
+          - name: log-cache-gateway-docker
+          - name: cf-auth-proxy-docker
+          - name: cf-k8s-logging
+        outputs:
+          - name: cf-k8s-logging-release
+        params:
+          RELEASE_VERSION: 0.1.0
+        run:
+          path: /bin/bash
+          args:
+          - -c
+          - |
+            pushd cf-k8s-logging
+              new_fluent_image_digest=$(cat ../cf-k8s-logging-docker/digest)
+              new_log_cache_image_digest=$(cat ../log-cache-docker/digest)
+              new_syslog_image_digest=$(cat ../syslog-server-docker/digest)
+              new_log_cache_gateway_image_digest=$(cat ../log-cache-gateway-docker/digest)
+              new_cf_auth_proxy_image_digest=$(cat ../cf-auth-proxy-docker/digest)
+              sed -i "s| syslog_server:.*| syslog_server: \"logcache/syslog-server@$new_syslog_image_digest\"|" config/values.yml
+              sed -i "s| log_cache:.*| log_cache: \"logcache/log-cache@$new_log_cache_image_digest\"|" config/values.yml
+              sed -i "s| log_cache_gateway:.*| log_cache_gateway: \"logcache/log-cache-gateway@$new_log_cache_gateway_image_digest\"|" config/values.yml
+              sed -i "s| cf_auth_proxy:.*| cf_auth_proxy: \"logcache/log-cache-cf-auth-proxy@$new_cf_auth_proxy_image_digest\"|" config/values.yml
+              sed -i "s| fluent:.*| fluent: \"logcache/cf-k8s-logging@$new_fluent_image_digest\"|" config/values.yml
+
+              echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
+              mkdir ../cf-k8s-logging-release/globs
+              cp config/values.yml ../cf-k8s-logging-release/globs/
+              cp config/manifests/* ../cf-k8s-logging-release/globs/
+              git rev-parse HEAD > ../cf-k8s-logging-release/commitish
+            popd
+    - put: cf-k8s-logging-github-release
+      params:
+        name: cf-k8s-logging-release/name
+        tag: cf-k8s-logging-release/name
+        globs:
+        - cf-k8s-logging-release/globs/*
+        commitish: cf-k8s-logging-release/commitish
+
