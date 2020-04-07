@@ -1,0 +1,24 @@
+#@ load("@ytt:data", "data")
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-forwarder-config
+  namespace: cf-system
+data:
+  fluentd.conf: |
+    # Inputs
+    <source>
+      @type dummy
+      tag forwarded
+      dummy {"This was a":"trimuph!"}
+    </source>
+
+    <match **>
+      @type forward
+      <server>
+        name fluent_dest
+        host fluentd-ingress
+        port 24224
+      </server>
+    </match>

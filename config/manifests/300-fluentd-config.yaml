@@ -4,12 +4,17 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: #@ data.values.system_namespace
+  namespace: cf-system #! TODO Changeme
 data:
   fluentd.conf: |
     # Inputs
-    <match kubernetes.var.log.containers.fluentd**>
-      @type null
+    <source>
+      @type forward
+      tag forwarded
+    </source>
+
+    <match forwarded.**>
+      @type stdout
     </match>
 
     <source>
@@ -35,6 +40,10 @@ data:
     </source>
 
     # Filters
+    <match kubernetes.var.log.containers.fluentd**>
+      @type null
+    </match>
+    
     <filter kubernetes.**>
       @type kubernetes_metadata
     </filter>

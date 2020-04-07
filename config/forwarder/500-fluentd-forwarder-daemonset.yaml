@@ -3,18 +3,18 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: fluentd
+  name: fluentd-forwarder
   namespace: cf-system
   labels:
-    app: fluentd
+    app: fluentd-forwarder
 spec:
   selector:
     matchLabels:
-      app: fluentd
+      app: fluentd-forwarder
   template:
     metadata:
       labels:
-        app: fluentd
+        app: fluentd-forwarder
     spec:
       serviceAccountName: fluentd-service-account
       tolerations:
@@ -47,7 +47,7 @@ spec:
       volumes:
       - name: fluentd-config
         configMap:
-          name: fluentd-config
+          name: fluent-forwarder-config
       - name: varlog
         hostPath:
           path: /var/log
