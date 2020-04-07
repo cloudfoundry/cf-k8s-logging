@@ -1,20 +1,20 @@
-#@ load("@ytt:data", "data")
 ---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
-  name: fluentd
+  name: fluentd-forwarder
   namespace: cf-system
   labels:
-    app: fluentd
+    app: fluentd-forwarder
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: fluentd
+      app: fluentd-forwarder
   template:
     metadata:
       labels:
-        app: fluentd
+        app: fluentd-forwarder
     spec:
       serviceAccountName: fluentd-service-account
       tolerations:
@@ -24,9 +24,7 @@ spec:
       - name: image-registry-credentials
       containers:
       - name: fluentd
-        image: logcache/cf-k8s-logging@sha256:44e20fa761fb67436eabd70a226d88ca7398619aaa2b3b468405017c75fd9607
-        ports:
-        - containerPort: 24224
+        image: #TODO Fill in the desired Log Cache Image
         resources:
           limits:
             memory: 200Mi
@@ -49,7 +47,7 @@ spec:
       volumes:
       - name: fluentd-config
         configMap:
-          name: fluentd-config
+          name: fluent-forwarder-config
       - name: varlog
         hostPath:
           path: /var/log
