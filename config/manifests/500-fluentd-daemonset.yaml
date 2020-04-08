@@ -25,6 +25,8 @@ spec:
       containers:
       - name: fluentd
         image: logcache/cf-k8s-logging@sha256:44e20fa761fb67436eabd70a226d88ca7398619aaa2b3b468405017c75fd9607
+        ports:
+        - containerPort: 24224
         resources:
           limits:
             memory: 200Mi

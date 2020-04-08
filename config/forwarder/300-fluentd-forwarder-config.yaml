@@ -11,7 +11,11 @@ data:
     <source>
       @type dummy
       tag forwarded
-      dummy {"This was a":"trimuph!"}
+      dummy {
+        "log": "This is log. Look on and dispair.",
+        "app_id":"12345",
+        "instance_id":"67890"
+      }
     </source>
 
     <match **>
