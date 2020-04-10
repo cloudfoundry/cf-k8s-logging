@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: cf-system
+  namespace: #@ data.values.system_namespace
   labels:
     app: fluentd
 spec:
@@ -24,7 +24,7 @@ spec:
       - name: image-registry-credentials
       containers:
       - name: fluentd
-        image: logcache/cf-k8s-logging@sha256:44e20fa761fb67436eabd70a226d88ca7398619aaa2b3b468405017c75fd9607
+        image: #@ data.values.images.fluent
         ports:
         - containerPort: 24224
         resources:
