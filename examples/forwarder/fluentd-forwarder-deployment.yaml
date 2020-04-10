@@ -16,15 +16,12 @@ spec:
       labels:
         app: fluentd-forwarder
     spec:
-      serviceAccountName: fluentd-service-account
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
-      imagePullSecrets:
-      - name: image-registry-credentials
       containers:
       - name: fluentd
-        image: #TODO Fill in the desired Log Cache Image
+        image: #TODO Fill in the desired Fluentd image, for example, fluent/fluentd
         resources:
           limits:
             memory: 200Mi
@@ -34,29 +31,8 @@ spec:
         volumeMounts:
         - name: fluentd-config
           mountPath: /fluentd/etc
-        - name: varlog
-          mountPath: /var/log
-        - name: varvcapstore
-          mountPath: /var/vcap/store
-        - name: dockercontainers
-          mountPath: /var/lib/docker/containers
-        - mountPath: /ca
-          name: ca
-          readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
       - name: fluentd-config
         configMap:
           name: fluent-forwarder-config
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varvcapstore
-        hostPath:
-          path: /var/vcap/store
-      - name: dockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
-      - name: ca
-        secret:
-          secretName: log-cache-ca
