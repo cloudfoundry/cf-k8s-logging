@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd $(dirname $0) && pwd -P)"
 BASE_DIR="${SCRIPT_DIR}/.."
 
 pushd "${CF_FOR_K8s_DIR}"
-  vendir sync -d config/_ytt_lib/github.com/cloudfoundry/cf-k8s-logging="${BASE_DIR}"
+  vendir sync -d config/_ytt_lib/github.com/cloudfoundry/cf-k8s-logging/config="${BASE_DIR}/config"
 popd
 
 # this is here until cf-for-k8s removes pinned images

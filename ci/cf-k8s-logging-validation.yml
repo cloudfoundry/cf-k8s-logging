@@ -448,8 +448,7 @@ jobs:
 
               echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
               mkdir ../cf-k8s-logging-release/globs
-              cp config/values.yml ../cf-k8s-logging-release/globs/
-              cp config/manifests/* ../cf-k8s-logging-release/globs/
+              cp config/* ../cf-k8s-logging-release/globs/
               git rev-parse HEAD > ../cf-k8s-logging-release/commitish
             popd
     - put: cf-k8s-logging-github-release
