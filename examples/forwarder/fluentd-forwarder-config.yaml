@@ -14,7 +14,8 @@ data:
       dummy {
         "log": "This is a test log from a fluent log producer",
         "app_id":"11111111-1111-1111-1111-111111111111",
-        "instance_id":"1"
+        "instance_id":"1",
+        "source_type": "111"
       }
     </source>
 
