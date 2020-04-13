@@ -51,6 +51,15 @@ data:
       <record>
         app_id ${record.dig("kubernetes", "labels", "cloudfoundry_org/app_guid")}
         instance_id ${record.dig("kubernetes", "pod_id")}
+        structured_data \[tags@47450 source_type="${record.dig("kubernetes", "labels", "cloudfoundry_org/source_type")}"\]
+      </record>
+    </filter>
+
+    <filter forwarded.**>
+      @type record_transformer
+      enable_ruby
+      <record>
+        structured_data \[tags@47450 source_type="${record.dig("source_type")}"\]
       </record>
     </filter>
 
@@ -72,6 +81,7 @@ data:
         @type syslog_rfc5424
         proc_id_field instance_id
         app_name_field app_id
+        structured_data_field structured_data
       </format>
 
       <buffer>

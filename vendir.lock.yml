@@ -6,8 +6,8 @@ directories:
       sha: 348b914b4692db178ec44be488d1f9959535b85d
     path: log-cache
   - git:
-      commitTitle: update image to use ubuntu bionic
-      sha: 2f9c91e826f4efc5e8e91a833bfd8061d5d4431a
+      commitTitle: update fluent to 0.8.0
+      sha: 7e943d3c0273c2f807812409caa9d3b705f7da8c
     path: cf-k8s-logging-fluent
   path: vendor
 kind: LockConfig
