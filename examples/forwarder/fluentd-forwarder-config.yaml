@@ -6,7 +6,7 @@ metadata:
   name: fluent-forwarder-config
   namespace: cf-system
 data:
-  fluentd.conf: |
+  fluent.conf: |
     # Inputs
     <source>
       @type dummy
