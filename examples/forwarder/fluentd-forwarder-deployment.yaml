@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluentd-forwarder
+  namespace: cf-system
+  labels:
+    app: fluentd-forwarder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluentd-forwarder
+  template:
+    metadata:
+      labels:
+        app: fluentd-forwarder
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: #TODO Fill in the desired Fluentd image, for example, fluent/fluentd
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: fluentd-config
+          mountPath: /fluentd/etc
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: fluentd-config
+        configMap:
+          name: fluent-forwarder-config

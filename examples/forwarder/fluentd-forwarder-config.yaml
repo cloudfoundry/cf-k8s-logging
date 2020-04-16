@@ -1,0 +1,28 @@
+#@ load("@ytt:data", "data")
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-forwarder-config
+  namespace: cf-system
+data:
+  fluent.conf: |
+    # Inputs
+    <source>
+      @type dummy
+      tag forwarded
+      dummy {
+        "log": "This is a test log from a fluent log producer",
+        "app_id":"11111111-1111-1111-1111-111111111111",
+        "instance_id":"1"
+      }
+    </source>
+
+    <match **>
+      @type forward
+      flush_interval 1
+      <server>
+        name fluentd_dest
+        host fluentd-forwarder-ingress
+      </server>
+    </match>
