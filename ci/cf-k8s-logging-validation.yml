@@ -18,8 +18,6 @@ resources:
     branch: master
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
-    ignore_paths:
-    - lib/fluent-plugin-syslog_rfc5424/version.rb
 
 - name: log-cache-release
   type: git
@@ -144,7 +142,7 @@ jobs:
 
             cd fluentd-syslog
             gem install gem-release
-            gem bump -v rc
+            gem bump -v rc --skip-ci
     - put: fluentd-syslog-push
       params:
         repository: fluentd-syslog-commited
