@@ -2,5 +2,5 @@ source "https://rubygems.org"
 
 gem "fluentd", "1.7.4"
 gem "fluent-plugin-kubernetes_metadata_filter", "~> 2.3.0"
-gem "fluent-plugin-syslog_rfc5424", "0.7.3"
+gem "fluent-plugin-syslog_rfc5424", "0.8.0"
 gem 'fluent-plugin-multi-format-parser', '1.0.0'
