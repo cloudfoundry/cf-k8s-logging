@@ -1,4 +1,5 @@
 FROM ubuntu:bionic
+RUN exit 183
 RUN apt update && apt install -y ruby ruby-dev
 USER root
 WORKDIR /home/fluent
