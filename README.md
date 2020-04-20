@@ -29,6 +29,10 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 {"log":"This is a test log from a fluent log producer","app_id":"11111111-1111-1111-1111-111111111111","instance_id":"1", "source_type":"APP"}
 ```
 
+The logs will be received by the fluent ingress service called `fluentd-forwarder-ingress` at port 24224 using the fluent forwarding protocol.
+Libraries can to forward can be found at https://github.com/fluent/fluent-logger-{ruby,golang,java}, or one can setup a fluent/fluentd to
+forward logs using an output plugin.
+
 ### Development flow
 
 1. make updates needed (update vendir, update k8s files, etc).
