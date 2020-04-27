@@ -29,7 +29,3 @@ log_cache_gateway:
 log_cache_syslog:
   crt: "" #! Base64-encoded cert for the log cache syslog server requires CN of log-cache-syslog
   key: "" #! Base64-encoded private key for the cert above
-
-client:
-  id: "" #! client id
-  secret: "" #! client secret

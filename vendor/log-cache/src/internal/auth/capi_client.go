@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"code.cloudfoundry.org/go-loggregator/metrics"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,17 +11,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-const (
-	MAX_RETRIES = 3
+	"code.cloudfoundry.org/go-loggregator/metrics"
 )
 
 type CAPIClient struct {
 	client                  HTTPClient
 	addr                    string
 	tokenCache              *sync.Map
-	tokenPruningInterval    time.Duration
 	cacheExpirationInterval time.Duration
 	log                     *log.Logger
 
@@ -48,7 +44,6 @@ func NewCAPIClient(
 		client:                  client,
 		addr:                    addr,
 		tokenCache:              &sync.Map{},
-		tokenPruningInterval:    time.Minute,
 		cacheExpirationInterval: time.Minute,
 		log:                     log,
 
@@ -81,108 +76,54 @@ func NewCAPIClient(
 
 type CAPIOption func(c *CAPIClient)
 
-func WithTokenPruningInterval(interval time.Duration) CAPIOption {
-	return func(c *CAPIClient) {
-		c.tokenPruningInterval = interval
-	}
-}
-
 func WithCacheExpirationInterval(interval time.Duration) CAPIOption {
 	return func(c *CAPIClient) {
 		c.cacheExpirationInterval = interval
 	}
 }
 
-type authorizedSourceIds struct {
-	sourceIds  []string
-	retryCount int
-	expiresAt  time.Time
-}
-
 func (c *CAPIClient) IsAuthorized(sourceId string, clientToken string) bool {
-	var sourceIds []string
-	var retryCount int
-	s, ok := c.tokenCache.Load(clientToken)
-
-	// if the token was found in the cache and hasn't expired yet, we'll
-	// check to see if the sourceId is contained
-	if ok && time.Now().Before(s.(authorizedSourceIds).expiresAt) {
-		sourceIds = s.(authorizedSourceIds).sourceIds
-		retryCount = s.(authorizedSourceIds).retryCount
-
-		// if our cache contains the sourceId, then we're all set
-		if isContained(sourceIds, sourceId) {
-			return true
-		}
-
-		// if our cache doesn't have the sourceId and we're already at our retry limit
-		if retryCount >= MAX_RETRIES {
-			return false
-		}
-
-		retryCount += 1
+	_, ok := c.tokenCache.Load(clientToken + sourceId)
+	if ok {
+		return true
 	}
 
-	// if we are here, one of two scenarios is possible:
-	// 1) we didn't find the token in the cache, so we're fetching from
-	//    CAPI for the very first time for this token
-	// 2) we found the token in the cache, but failed to find the sourceId
-	//    and are under our retry limit, thus we want to ask CAPI for a
-	//    refreshed list of sourceIds
-	sourceIds = c.AvailableSourceIDs(clientToken)
-
-	c.tokenCache.Store(clientToken, authorizedSourceIds{
-		sourceIds:  sourceIds,
-		retryCount: retryCount,
-		expiresAt:  time.Now().Add(c.cacheExpirationInterval),
-	})
-
-	return isContained(sourceIds, sourceId)
-}
-
-func isContained(sourceIds []string, sourceId string) bool {
-	for _, s := range sourceIds {
-		if s == sourceId {
-			return true
-		}
+	if c.HasApp(sourceId, clientToken) || c.HasService(sourceId, clientToken) {
+		c.tokenCache.Store(clientToken+sourceId, time.Now())
+		return true
 	}
 
 	return false
 }
 
-func (c *CAPIClient) AvailableSourceIDs(authToken string) []string {
-	var sourceIDs []string
-	req, err := http.NewRequest(http.MethodGet, c.addr+"/v3/apps", nil)
+func (c *CAPIClient) HasApp(sourceID, authToken string) bool {
+	req, err := http.NewRequest(http.MethodGet, c.addr+"/v3/apps/"+sourceID, nil)
 	if err != nil {
 		c.log.Printf("failed to build authorize log access request: %s", err)
-		return nil
+		return false
 	}
 
-	resources, err := c.doPaginatedResourceRequest(req, authToken, c.storeAppsLatency)
+	resp, err := c.doRequest(req, authToken, c.storeAppsLatency)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	return true
+}
+
+func (c *CAPIClient) HasService(sourceID, authToken string) bool {
+	req, err := http.NewRequest(http.MethodGet, c.addr+"/v3/service_instances/"+sourceID, nil)
 	if err != nil {
-		c.log.Print(err)
-		return nil
-	}
-	for _, resource := range resources {
-		sourceIDs = append(sourceIDs, resource.Guid)
+		c.log.Printf("failed to build authorize log access request: %s", err)
+		return false
 	}
 
-	req, err = http.NewRequest(http.MethodGet, c.addr+"/v3/service_instances", nil)
-	if err != nil {
-		c.log.Printf("failed to build authorize service instance access request: %s", err)
-		return nil
+	resp, err := c.doRequest(req, authToken, c.storeListServiceInstancesLatency)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return false
 	}
 
-	resources, err = c.doPaginatedResourceRequest(req, authToken, c.storeListServiceInstancesLatency)
-	if err != nil {
-		c.log.Print(err)
-		return nil
-	}
-	for _, resource := range resources {
-		sourceIDs = append(sourceIDs, resource.Guid)
-	}
-
-	return sourceIDs
+	return true
 }
 
 func (c *CAPIClient) GetRelatedSourceIds(appNames []string, authToken string) map[string][]string {
@@ -213,6 +154,44 @@ func (c *CAPIClient) GetRelatedSourceIds(appNames []string, authToken string) ma
 	}
 
 	return guidSets
+}
+
+func (c *CAPIClient) AvailableSourceIDs(authToken string) []string {
+	appIDs, err := c.sourceIDsForResourceType("apps", authToken, c.storeAppsLatency)
+	if err != nil {
+		return nil
+	}
+
+	serviceIDs, err := c.sourceIDsForResourceType("service_instances", authToken, c.storeListServiceInstancesLatency)
+	if err != nil {
+		return nil
+	}
+
+	return append(appIDs, serviceIDs...)
+}
+
+func (c *CAPIClient) sourceIDsForResourceType(resourceType, authToken string, metrics metrics.Gauge) ([]string, error) {
+	var sourceIDs []string
+	req, err := http.NewRequest(http.MethodGet, c.addr+"/v3/"+resourceType, nil)
+	if err != nil {
+		c.log.Printf("failed to build authorize service instance access request: %s", err)
+		return nil, err
+	}
+
+	query := req.URL.Query()
+	query.Set("per_page", "5000")
+	req.URL.RawQuery = query.Encode()
+
+	resources, err := c.doPaginatedResourceRequest(req, authToken, metrics)
+	if err != nil {
+		c.log.Print(err)
+		return nil, err
+	}
+	for _, resource := range resources {
+		sourceIDs = append(sourceIDs, resource.Guid)
+	}
+
+	return sourceIDs, nil
 }
 
 type resource struct {
@@ -294,13 +273,12 @@ func (c *CAPIClient) TokenCacheSize() int {
 }
 
 func (c *CAPIClient) pruneTokens() {
-	for range time.Tick(c.tokenPruningInterval) {
-		now := time.Now()
+	for range time.Tick(c.cacheExpirationInterval) {
 
 		c.tokenCache.Range(func(k, v interface{}) bool {
-			cachedSources := v.(authorizedSourceIds)
+			requestTime := v.(time.Time)
 
-			if now.After(cachedSources.expiresAt) {
+			if time.Since(requestTime) >= c.cacheExpirationInterval {
 				c.tokenCache.Delete(k)
 			}
 

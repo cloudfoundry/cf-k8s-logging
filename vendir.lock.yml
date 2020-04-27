@@ -3,7 +3,7 @@ directories:
 - contents:
   - git:
       commitTitle: Bump modules
-      sha: 348b914b4692db178ec44be488d1f9959535b85d
+      sha: 60d4baaf8de8a31c213306adfce44e3f4ea98e29
     path: log-cache
   - git:
       commitTitle: update fluent to 0.8.0
