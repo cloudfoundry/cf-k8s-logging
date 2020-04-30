@@ -12,11 +12,16 @@ labels which contain important app information. Namely, app_guid, and
 source_type.
 
 ### System Components
+Cf Components which wish to emit logs on behalf of apps may do so via the
+[Forwarder Interface](https://docs.fluentd.org/output/forward).
+
+The logs will be received by the fluent ingress service called `fluentd-forwarder-ingress` at port `24224` using the fluent forwarding protocol.
+Libraries can to forward can be found at `https://github.com/fluent/fluent-logger-{ruby,golang,java}`, or a fluent/fluentd can be configured to
+forward logs using an output plugin.
+
 An example is located [here](examples/forwarder)
 
-cf-k8s-logging implements the [Fluent Forward](https://docs.fluentd.org/output/forward)
-API for other components to emit logs directly into the outgoing log stream on
-behalf of apps.
+***NOTE:***  To communicate with the Forwarder API, Istio sidecar injection must be enabled with the `istio-injection=enabled` label in the component's namespace.
 
 #### Log Format
 Logs emitted to cf-k8s-logging by system components must include the fields:
@@ -28,10 +33,6 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 ```
 {"log":"This is a test log from a fluent log producer","app_id":"11111111-1111-1111-1111-111111111111","instance_id":"1", "source_type":"APP"}
 ```
-
-The logs will be received by the fluent ingress service called `fluentd-forwarder-ingress` at port 24224 using the fluent forwarding protocol.
-Libraries can to forward can be found at https://github.com/fluent/fluent-logger-{ruby,golang,java}, or one can setup a fluent/fluentd to
-forward logs using an output plugin.
 
 ### Development flow
 
