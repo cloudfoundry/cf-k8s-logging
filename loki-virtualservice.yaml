@@ -1,0 +1,35 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: loki-external-virtual-service
+  namespace: cf-system
+spec:
+  gateways:
+  - cf-system/istio-ingressgateway
+  hosts:
+  - "loki.<system_domain>"
+  http:
+  - route:
+    - destination:
+        host: "loki.cf-system.svc.cluster.local"
+        port:
+          number: 3100
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: grafana-external-virtual-service
+  namespace: cf-system
+spec:
+  gateways:
+  - cf-system/istio-ingressgateway
+  hosts:
+  - "loki-grafana.<system_domain>"
+  http:
+  - route:
+    - destination:
+        host: "loki-grafana.cf-system.svc.cluster.local"
+        port:
+          number: 80

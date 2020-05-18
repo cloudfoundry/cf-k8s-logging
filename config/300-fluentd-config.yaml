@@ -72,20 +72,34 @@ data:
     </filter>
 
     <match **>
-      @type syslog_rfc5424
-      host log-cache-syslog
-      port 8082
-      transport tls
-      trusted_ca_path /ca/tls.crt
-      <format>
+      @type copy
+      <store>
         @type syslog_rfc5424
-        proc_id_field instance_id
-        app_name_field app_id
-        structured_data_field structured_data
-      </format>
+        host log-cache-syslog
+        port 8082
+        transport tls
+        trusted_ca_path /ca/tls.crt
+        <format>
+          @type syslog_rfc5424
+          proc_id_field instance_id
+          app_name_field app_id
+          structured_data_field structured_data
+        </format>
 
-      <buffer>
-        @type memory
-        flush_mode immediate
-      </buffer>
+        <buffer>
+          @type memory
+          flush_mode immediate
+        </buffer>
+      </store>
+      <store>
+        @type loki
+        url http://loki.cf-system.svc.cluster.local:3100
+        extract_kubernetes_labels true
+        flush_interval 1s
+        flush_at_shutdown true
+        buffer_chunk_limit 1m
+      </store>
+      <store>
+        @type stdout
+      </store>
     </match>
