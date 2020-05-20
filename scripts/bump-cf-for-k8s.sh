@@ -8,12 +8,5 @@ BASE_DIR="${SCRIPT_DIR}/.."
 
 pushd "${CF_FOR_K8s_DIR}"
   vendir sync -d config/_ytt_lib/github.com/cloudfoundry/cf-k8s-logging/config="${BASE_DIR}/config"
-
-  sed -i '/^client:/,+2 d' config/logging.yml
-  sed -i '/^log_cache_client:/,+3 d' config/values.yml
-
-  sed -i '/^- name: log_cache_client_password/,+1 d' hack/generate-values.sh
-  sed -i '/^log_cache_client:/,+3 d' hack/generate-values.sh
-
 popd
 
