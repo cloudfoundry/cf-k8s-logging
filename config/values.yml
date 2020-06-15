@@ -18,10 +18,6 @@ log_cache:
   crt: "" #! Base64-encoded cert for the log cache requires CN of log-cache
   key: "" #! Base64-encoded private key for the cert above
 
-log_cache_metrics:
-  crt: "" #! Base64-encoded cert for the log cache metrics requires CN of log-cache-metrics
-  key: "" #! Base64-encoded private key for the cert above
-
 log_cache_gateway:
   crt: "" #! Base64-encoded cert for the log cache gateway
   key: "" #! Base64-encoded private key for the cert above

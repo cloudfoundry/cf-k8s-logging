@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: Bump modules
-      sha: 60d4baaf8de8a31c213306adfce44e3f4ea98e29
+      commitTitle: Make TLS optional in metrics endpoints...
+      sha: e03c696874b5fbdfc9fbb9ab855539d32e667112
     path: log-cache
   - git:
       commitTitle: update fluent to 0.8.0
