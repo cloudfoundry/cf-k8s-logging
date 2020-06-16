@@ -36,7 +36,7 @@ resources:
 - name: cf-for-k8s
   type: git
   source:
-    branch: master
+    branch: logcache-metrics-master
     uri: git@github.com:cloudfoundry/cf-for-k8s
     private_key: ((cf-loggregator-oauth-bot-key))
 
