@@ -317,7 +317,9 @@ jobs:
               echo "Generating install values..."
               cf-for-k8s-with-logging/hack/generate-values.sh -d "${DNS_DOMAIN}" -g gcp-service-account.json > cf-install-values.yml
               echo "Installing CF..."
-              cf-for-k8s-with-logging/bin/install-cf.sh cf-install-values.yml
+              ytt -f cf-for-k8s-with-logging/config -f cf-install-values.yml > cf-for-k8s-rendered.yml
+              kapp deploy -a cf -f cf-for-k8s-rendered.yml -y
+
               bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
               echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
               echo "Configuring DNS..."
