@@ -16,7 +16,7 @@ spec:
     metadata:
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
+        prometheus.io/port: "6060"
         prometheus.io/path: "/metrics"
       labels:
         app: log-cache
