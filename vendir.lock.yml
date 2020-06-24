@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: Bump modules
-      sha: 60d4baaf8de8a31c213306adfce44e3f4ea98e29
+      commitTitle: Public server for metrics...
+      sha: fa637cd7e2899d58930f893e52b9911cb8672755
     path: log-cache
   - git:
       commitTitle: update fluent to 0.8.0

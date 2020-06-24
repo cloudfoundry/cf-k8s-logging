@@ -14,6 +14,10 @@ spec:
       app: log-cache
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "6060"
+        prometheus.io/path: "/metrics"
       labels:
         app: log-cache
     spec:
@@ -33,9 +37,6 @@ spec:
         - mountPath: /ca
           name: ca
           readOnly: true
-        - mountPath: /metrics-certs
-          name: metrics-certs
-          readOnly: true
       - name: syslog-server
         image: #@ data.values.images.syslog_server
         ports:
@@ -53,9 +54,6 @@ spec:
         - mountPath: /syslog-server-certs
           name: syslog-server-certs
           readOnly: true
-        - mountPath: /metrics-certs
-          name: metrics-certs
-          readOnly: true
       - name: log-cache
         image: #@ data.values.images.log_cache
         volumeMounts:
@@ -64,9 +62,6 @@ spec:
           readOnly: true
         - mountPath: /log-cache-certs
           name: log-cache-certs
-          readOnly: true
-        - mountPath: /metrics-certs
-          name: metrics-certs
           readOnly: true
       - name: gateway
         image: #@ data.values.images.log_cache_gateway
@@ -85,9 +80,6 @@ spec:
         - mountPath: /gateway-certs
           name: gateway-certs
           readOnly: true
-        - mountPath: /metrics-certs
-          name: metrics-certs
-          readOnly: true
       volumes:
       - name: ca
         secret:
@@ -101,6 +93,3 @@ spec:
       - name: gateway-certs
         secret:
           secretName: log-cache-gateway
-      - name: metrics-certs
-        secret:
-          secretName: log-cache-metrics
