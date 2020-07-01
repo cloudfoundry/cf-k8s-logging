@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"code.cloudfoundry.org/go-loggregator/metrics"
+	metrics "code.cloudfoundry.org/go-metric-registry"
 )
 
 type CAPIClient struct {
@@ -50,18 +50,18 @@ func NewCAPIClient(
 		//TODO convert to histograms
 		storeAppsLatency: m.NewGauge(
 			"cf_auth_proxy_last_capiv3_apps_latency",
-			metrics.WithHelpText("Duration of last v3 apps CAPI request in nanoseconds."),
-			metrics.WithMetricTags(unitTag),
+			"Duration of last v3 apps CAPI request in nanoseconds.",
+			metrics.WithMetricLabels(unitTag),
 		),
 		storeListServiceInstancesLatency: m.NewGauge(
 			"cf_auth_proxy_last_capiv3_list_service_instances_latency",
-			metrics.WithHelpText("Duration of last v3 list service instances CAPI request in nanoseconds."),
-			metrics.WithMetricTags(unitTag),
+			"Duration of last v3 list service instances CAPI request in nanoseconds.",
+			metrics.WithMetricLabels(unitTag),
 		),
 		storeAppsByNameLatency: m.NewGauge(
 			"cf_auth_proxy_last_capiv3_apps_by_name_latency",
-			metrics.WithHelpText("Duration of last v3 apps by name CAPI request in nanoseconds."),
-			metrics.WithMetricTags(unitTag),
+			"Duration of last v3 apps by name CAPI request in nanoseconds.",
+			metrics.WithMetricLabels(unitTag),
 		),
 	}
 
@@ -112,7 +112,7 @@ func (c *CAPIClient) HasApp(sourceID, authToken string) bool {
 }
 
 func (c *CAPIClient) HasService(sourceID, authToken string) bool {
-	req, err := http.NewRequest(http.MethodGet, c.addr+"/v3/service_instances/"+sourceID, nil)
+	req, err := http.NewRequest(http.MethodGet, c.addr+"/v2/service_instances/"+sourceID, nil)
 	if err != nil {
 		c.log.Printf("failed to build authorize log access request: %s", err)
 		return false

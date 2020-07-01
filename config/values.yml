@@ -4,11 +4,11 @@ system_domain: ""
 system_namespace: ""
 
 images:
-  log_cache:
-  syslog_server:
-  log_cache_gateway:
-  fluent:
-  cf_auth_proxy:
+  log_cache: "logcache/log-cache@sha256:ededc93d210ffe3832daa2e7e693e9c40df68613d3062339105c34bbd52e7ebc"
+  syslog_server: "logcache/syslog-server@sha256:d8a4adaaed658bd32a9a1915fede5d70fba91f0a5385eb82f976495fadaef215"
+  log_cache_gateway: "logcache/log-cache-gateway@sha256:7130aec63202ae477185d8580f970cc1a52f68ad963b923ce64a3dc68aea6dfa"
+  fluent: "logcache/cf-k8s-logging@sha256:248202859dc4b97f1de8dbc25f6a800502b4045b81b9a92db7f691134f219839"
+  cf_auth_proxy: "logcache/log-cache-cf-auth-proxy@sha256:670d46a2098af7e06fb24f07849ff8b2bf88c1f45692b28ed7c5f7d5c68c6b8e"
 
 log_cache_ca:
   crt: "" #! Base64-encoded ca for the log cache

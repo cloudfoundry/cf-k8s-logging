@@ -42,14 +42,7 @@ RUN groupadd --system log-cache --gid 1000 && \
 USER 1000:1000
 WORKDIR /srv
 
-ENV ADDR=:8080 \
-    CA_PATH="/ca/tls.crt" \
-    CERT_PATH="/log-cache-certs/tls.crt" \
-    KEY_PATH="/log-cache-certs/tls.key" \
-    METRICS_CA_FILE_PATH="/ca/tls.crt" \
-    METRICS_CERT_FILE_PATH="/metrics-certs/tls.crt" \
-    METRICS_KEY_FILE_PATH="/metrics-certs/tls.key" \
-    ENV_DIR="/srv/conf.d"
+ENV ADDR=:8080
 
 EXPOSE 8080
 CMD [ "/srv/log-cache" ]

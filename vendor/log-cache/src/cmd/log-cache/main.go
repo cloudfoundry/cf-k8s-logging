@@ -1,13 +1,14 @@
 package main
 
 import (
-	"code.cloudfoundry.org/go-loggregator/metrics"
 	"log"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	metrics "code.cloudfoundry.org/go-metric-registry"
 
 	"code.cloudfoundry.org/go-envstruct"
 	. "code.cloudfoundry.org/log-cache/internal/cache"
@@ -18,6 +19,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	log.Print("Starting Log Cache...")
+	log.Print("THIS IS ACTUALLY THE NEW VERSION OF LOG CACHE")
 	defer log.Print("Closing Log Cache.")
 
 	cfg, err := LoadConfig()
@@ -29,19 +31,26 @@ func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
+	metricServerOption := metrics.WithTLSServer(
+		int(cfg.MetricsServer.Port),
+		cfg.MetricsServer.CertFile,
+		cfg.MetricsServer.KeyFile,
+		cfg.MetricsServer.CAFile,
+	)
+
+	if cfg.MetricsServer.CAFile == "" {
+		metricServerOption = metrics.WithPublicServer(int(cfg.MetricsServer.Port))
+	}
+
 	m := metrics.NewRegistry(
 		logger,
-		metrics.WithTLSServer(
-			int(cfg.MetricsServer.Port),
-			cfg.MetricsServer.CertFile,
-			cfg.MetricsServer.KeyFile,
-			cfg.MetricsServer.CAFile,
-		),
+		metricServerOption,
 	)
+
 	uptimeFn := m.NewGauge(
 		"log_cache_uptime",
-		metrics.WithHelpText("Time since log cache started."),
-		metrics.WithMetricTags(map[string]string{
+		"Time since log cache started.",
+		metrics.WithMetricLabels(map[string]string{
 			"unit": "seconds",
 		}),
 	)
@@ -63,11 +72,8 @@ func main() {
 		WithClustered(
 			cfg.NodeIndex,
 			cfg.NodeAddrs,
-			grpc.WithTransportCredentials(
-				cfg.TLS.Credentials("log-cache"),
-			),
+			grpc.WithInsecure(),
 		),
-		WithServerOpts(grpc.Creds(cfg.TLS.Credentials("log-cache"))),
 	)
 
 	cache.Start()

@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"code.cloudfoundry.org/go-loggregator/metrics"
+	metrics "code.cloudfoundry.org/go-metric-registry"
 
 	"crypto/x509"
 
@@ -34,15 +34,19 @@ func main() {
 		loggr.Fatalf("failed to load config: %s", err)
 	}
 	envstruct.WriteReport(cfg)
+	metricServerOption := metrics.WithTLSServer(
+		int(cfg.MetricsServer.Port),
+		cfg.MetricsServer.CertFile,
+		cfg.MetricsServer.KeyFile,
+		cfg.MetricsServer.CAFile,
+	)
+	if cfg.MetricsServer.CAFile == "" {
+		metricServerOption = metrics.WithPublicServer(int(cfg.MetricsServer.Port))
+	}
 
 	metrics := metrics.NewRegistry(
 		loggr,
-		metrics.WithTLSServer(
-			int(cfg.MetricsServer.Port),
-			cfg.MetricsServer.CertFile,
-			cfg.MetricsServer.KeyFile,
-			cfg.MetricsServer.CAFile,
-		),
+		metricServerOption,
 	)
 
 	var options []auth.UAAOption
