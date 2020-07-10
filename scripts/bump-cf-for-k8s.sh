@@ -8,5 +8,8 @@ BASE_DIR="${SCRIPT_DIR}/.."
 
 pushd "${CF_FOR_K8s_DIR}"
   vendir sync -d config/_ytt_lib/github.com/cloudfoundry/cf-k8s-logging/config="${BASE_DIR}/config"
+
+  #remove after upstreaming removal of certs
+  sed -i '/^log_cache_metrics:/,+3 d' config/logging.yml
 popd
 
