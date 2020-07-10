@@ -358,6 +358,27 @@ jobs:
                   export SMOKE_TEST_SKIP_SSL=true
                   cf-for-k8s-with-logging/hack/run-smoke-tests.sh
 
+          - task: run-logging-tests
+            config:
+              platform: linux
+              image_resource:
+                type: docker-image
+                source: {repository: relintdockerhubpushbot/cf-test-runner}
+              inputs:
+                - name: cf-k8s-logging
+                - name: env-metadata
+              run:
+                path: /bin/sh
+                args:
+                - -ec
+                - |
+                  DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
+                  export TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
+                  export TEST_USERNAME=admin
+                  export TEST_PASSWORD=$(cat env-metadata/cf-admin-password.txt)
+                  export TEST_SKIP_SSL=true
+                  cf-k8s-logging/hack/run_integration_tests.sh
+
           - task: delete-cf
             config:
               platform: linux
