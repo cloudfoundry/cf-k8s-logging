@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluent-bit-forwarder
+  namespace: cf-system
+  labels:
+    app: fluent-bit-forwarder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluent-bit-forwarder
+  template:
+    metadata:
+      labels:
+        app: fluent-bit-forwarder
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluent-bit
+        image: fluent/fluent-bit #images values
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: fluent-bit-config
+        configMap:
+          name: fluent-bit-forwarder-config

@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golang-forwarder
+  namespace: cf-system
+  labels:
+    app: golang-forwarder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: golang-forwarder
+  template:
+    metadata:
+      labels:
+        app: golang-forwarder
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: forwarder
+        image: logcache/golang-example-fluent:latest
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+      terminationGracePeriodSeconds: 30

@@ -21,7 +21,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: #TODO Fill in the desired Fluentd image, for example, fluent/fluentd
+        image: fluent/fluentd
         resources:
           limits:
             memory: 200Mi

@@ -19,7 +19,7 @@ The logs will be received by the fluent ingress service called `fluentd-forwarde
 Libraries can to forward can be found at `https://github.com/fluent/fluent-logger-{ruby,golang,java}`, or a fluent/fluentd can be configured to
 forward logs using an output plugin.
 
-An example is located [here](examples/forwarder)
+Examples are located [in the examples folder](examples)
 
 ***NOTE:***  To communicate with the Forwarder API, Istio sidecar injection must be enabled with the `istio-injection=enabled` label in the component's namespace.
 
@@ -32,6 +32,26 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 
 ```
 {"log":"This is a test log from a fluent log producer","app_id":"11111111-1111-1111-1111-111111111111","instance_id":"1", "source_type":"APP"}
+```
+
+### Debug logging in cf-k8s-logging fluentd
+
+To investigate fluentd closer, you can up the log level by setting the
+environment variable `FLUENTD_FLAGS` on fluentd, like so
+```
+env:
+- name: "FLUENTD_FLAGS"
+  value: "-vvv"
+```
+
+`-vvv` is the highest logging level
+
+Another way to see what is being sent is replacing the output with a stdout
+logger:
+```
+<match **>
+    @type stdout
+</match>
 ```
 
 ### Development flow
