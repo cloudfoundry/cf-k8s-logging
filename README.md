@@ -11,17 +11,24 @@ cf-k8s-logging. App containers are expected to contain cloudfoundry.org/
 labels which contain important app information. Namely, app_guid, and
 source_type.
 
-### System Components
-Cf Components which wish to emit logs on behalf of apps may do so via the
-[Forwarder Interface](https://docs.fluentd.org/output/forward).
+### System Components/Injected Logs
+Cf Components that wish to emit logs on behalf of apps may do so via the
+[Forwarder Interface](https://docs.fluentd.org/output/forward). The core of the
+fluent forward interface is sending MessagePack over TCP. Injected logs(as long
+as they contain the necissary details in the format below) should be forwarded
+to the appropriate downstream destinations.
 
-The logs will be received by the fluent ingress service called `fluentd-forwarder-ingress` at port `24224` using the fluent forwarding protocol.
-Libraries can to forward can be found at `https://github.com/fluent/fluent-logger-{ruby,golang,java}`, or a fluent/fluentd can be configured to
-forward logs using an output plugin.
+The logs will be received by the fluent ingress service called
+`fluentd-forwarder-ingress` at port `24224` using the fluent forwarding
+protocol. Libraries can to forward can be found at
+`https://github.com/fluent/fluent-logger-{ruby,golang,java}`, or a
+fluent/fluentd can be configured to forward logs using an output plugin.
 
 Examples are located [in the examples folder](examples)
 
-***NOTE:***  To communicate with the Forwarder API, Istio sidecar injection must be enabled with the `istio-injection=enabled` label in the component's namespace.
+***NOTE:***  To communicate with the Forwarder API, Istio sidecar injection
+must be enabled with the `istio-injection=enabled` label in the component's
+namespace.
 
 #### Log Format
 Logs emitted to cf-k8s-logging by system components must include the fields:
