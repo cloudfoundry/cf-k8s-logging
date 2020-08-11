@@ -40,6 +40,14 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 ```
 {"log":"This is a test log from a fluent log producer","app_id":"11111111-1111-1111-1111-111111111111","instance_id":"1", "source_type":"APP"}
 ```
+## Development flow
+
+1. make updates needed (update vendir, update k8s files, etc).
+1. make local commit(should make reverting image tags easy)
+1. run build ./scripts/build-images.sh, setting $REPOSITORY to a docker
+   repository you can push to
+1. run ./scripts/bump-cf-for-k8s.sh
+1. follow cf-for-k8s deployment steps.
 
 ### Debug logging in cf-k8s-logging fluentd
 
@@ -60,12 +68,3 @@ logger:
     @type stdout
 </match>
 ```
-
-## Development flow
-
-1. make updates needed (update vendir, update k8s files, etc).
-1. make local commit(should make reverting image tags easy)
-1. run build ./scripts/build-images.sh, setting $REPOSITORY to a docker
-   repository you can push to
-1. run ./scripts/bump-cf-for-k8s.sh
-1. follow cf-for-k8s deployment steps.
