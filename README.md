@@ -61,7 +61,7 @@ logger:
 </match>
 ```
 
-### Development flow
+## Development flow
 
 1. make updates needed (update vendir, update k8s files, etc).
 1. make local commit(should make reverting image tags easy)
