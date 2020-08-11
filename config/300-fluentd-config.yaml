@@ -46,6 +46,15 @@ data:
     </filter>
 
     <filter kubernetes.**>
+      @type grep
+
+      <exclude>
+        key $.kubernetes.container_name
+        pattern /.*istio.*/
+      </exclude>
+    </filter>
+
+    <filter kubernetes.**>
       @type record_transformer
       enable_ruby
       <record>
