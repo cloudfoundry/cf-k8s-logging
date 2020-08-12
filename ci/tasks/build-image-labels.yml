@@ -1,0 +1,19 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: gcr.io/cff-loggregator/deplab
+    username: _json_key
+    password: ((ci_k8s_gcp_service_account_json))
+
+inputs:
+  - name: cf-k8s-logging
+  - name: initial-image
+  - name: cf-k8s-logging-ci
+
+outputs:
+  - name: labels
+
+run:
+  path: cf-k8s-logging-ci/ci/tasks/docker/build-image-labels.sh
