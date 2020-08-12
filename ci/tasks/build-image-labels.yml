@@ -16,4 +16,4 @@ outputs:
   - name: labels
 
 run:
-  path: cf-k8s-logging-ci/ci/tasks/docker/build-image-labels.sh
+  path: cf-k8s-logging-ci/ci/tasks/build-image-labels.sh
