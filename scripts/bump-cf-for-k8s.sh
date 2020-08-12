@@ -11,5 +11,9 @@ pushd "${CF_FOR_K8s_DIR}"
 
   #remove after upstreaming removal of certs
   sed -i '/^log_cache_metrics:/,+3 d' config/logging/logging.yml
+  sed -i '/^log_cache_ca:/,+3 d' config/logging/logging.yml
+  sed -i '/^log_cache:/,+3 d' config/logging/logging.yml
+  sed -i '/^log_cache_gateway:/,+3 d' config/logging/logging.yml
+  sed -i '/^log_cache_syslog:/,+3 d' config/logging/logging.yml
 popd
 

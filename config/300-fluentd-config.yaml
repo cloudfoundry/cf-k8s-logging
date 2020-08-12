@@ -84,8 +84,7 @@ data:
       @type syslog_rfc5424
       host log-cache-syslog
       port 8082
-      transport tls
-      trusted_ca_path /ca/tls.crt
+      transport tcp
       <format>
         @type syslog_rfc5424
         proc_id_field instance_id

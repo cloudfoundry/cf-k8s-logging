@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: Public server for metrics...
-      sha: fa637cd7e2899d58930f893e52b9911cb8672755
+      commitTitle: Create final release
+      sha: 359b4774261a929c7911e5619ac41e90c71c5bcd
     path: log-cache
   - git:
       commitTitle: update fluent to 0.8.0
