@@ -15,7 +15,7 @@ resources:
 - name: fluentd-syslog
   type: git
   source:
-    branch: master
+    branch: main
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
 
@@ -29,7 +29,7 @@ resources:
 - name: fluentd-syslog-push
   type: git
   source:
-    branch: master
+    branch: main
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
 
