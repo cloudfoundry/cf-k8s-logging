@@ -40,10 +40,10 @@ resources:
     uri: git@github.com:cloudfoundry/cf-for-k8s
     private_key: ((cf-loggregator-oauth-bot-key))
 
-- name: cf-k8s-logging-master
+- name: cf-k8s-logging-main
   type: git
   source:
-    branch: master
+    branch: main
     uri: git@github.com:cloudfoundry/cf-k8s-logging
     private_key: ((cf-loggregator-oauth-bot-key))
 
@@ -418,7 +418,7 @@ jobs:
   - name: create-release
     plan:
     - get: cf-k8s-logging
-      resource: cf-k8s-logging-master
+      resource: cf-k8s-logging-main
     - in_parallel:
       - put: cf-k8s-logging-docker
         params:
@@ -486,14 +486,14 @@ jobs:
         - cf-k8s-logging-release/globs/*
         commitish: cf-k8s-logging-release/commitish
 
-  - name: run-tests-on-cf-for-k8s-master
+  - name: run-tests-on-cf-for-k8s-main
     public: true
     serial: true
     serial_groups:
     - basenji
     plan:
     - get: cf-k8s-logging
-      resource: cf-k8s-logging-master
+      resource: cf-k8s-logging-main
       params:
         integration_tool: rebase
       trigger: true
