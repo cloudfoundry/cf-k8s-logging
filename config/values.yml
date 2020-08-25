@@ -10,6 +10,7 @@ images:
   fluent:
   cf_auth_proxy:
 
+debug: false
 log_cache_ca:
   crt: "" #! Base64-encoded ca for the log cache
   key: "" #! Base64-encoded private key for the cert above
