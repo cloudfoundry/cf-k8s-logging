@@ -1,3 +1,5 @@
+#!/bin/bash
+
 REPOSITORY=${REPOSITORY:-logcache}
 
 function buildAndReplaceImage {
