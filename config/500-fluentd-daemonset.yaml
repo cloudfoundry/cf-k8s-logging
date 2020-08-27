@@ -44,9 +44,6 @@ spec:
           mountPath: /var/vcap/store
         - name: dockercontainers
           mountPath: /var/lib/docker/containers
-        - mountPath: /ca
-          name: ca
-          readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
       - name: fluentd-config
@@ -61,6 +58,3 @@ spec:
       - name: dockercontainers
         hostPath:
           path: /var/lib/docker/containers
-      - name: ca
-        secret:
-          secretName: log-cache-ca

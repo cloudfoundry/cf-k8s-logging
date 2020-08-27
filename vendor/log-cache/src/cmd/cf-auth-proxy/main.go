@@ -72,10 +72,6 @@ func main() {
 		loggr.Fatalf("failed to parse gateway address: %s", err)
 	}
 
-	// Force communication with the gateway to happen via HTTPS, regardless of
-	// the scheme provided in the config
-	gatewayURL.Scheme = "https"
-
 	capiClient := auth.NewCAPIClient(
 		cfg.CAPI.Addr,
 		buildCAPIClient(cfg, loggr),
@@ -84,14 +80,16 @@ func main() {
 		auth.WithCacheExpirationInterval(cfg.CacheExpirationInterval),
 	)
 
-	proxyCACertPool := loadCA(cfg.ProxyCAPath, loggr)
-
 	// Calls to /api/v1/meta get sent to the gateway, but not through the
 	// reverse proxy like everything else. As a result, we also need to set
 	// the Transport here to ensure the correct root CA is available.
 	metaHTTPClient := &http.Client{
-		Timeout:   5 * time.Second,
-		Transport: NewTransportWithRootCA(proxyCACertPool),
+		Timeout: 5 * time.Second,
+	}
+
+	if cfg.ProxyCAPath != "" {
+		proxyCACertPool := loadCA(cfg.ProxyCAPath, loggr)
+		metaHTTPClient.Transport = NewTransportWithRootCA(proxyCACertPool)
 	}
 
 	metaFetcher := client.NewClient(
@@ -112,16 +110,20 @@ func main() {
 		WithCFAuthProxyBlock(),
 	}
 
-	if cfg.DisableTLSServer {
+	if cfg.ProxyCAPath != "" {
+		proxyCACertPool := loadCA(cfg.ProxyCAPath, loggr)
+		proxyOptions = append(proxyOptions, WithCFAuthProxyCACertPool(proxyCACertPool))
+	}
+
+	if cfg.CertPath == "" && cfg.KeyPath == "" {
 		proxyOptions = append(proxyOptions, WithCFAuthProxyTLSDisabled())
+	} else {
+		proxyOptions = append(proxyOptions, WithCFAuthProxyTLSServer(cfg.CertPath, cfg.KeyPath))
 	}
 
 	proxy := NewCFAuthProxy(
 		gatewayURL.String(),
 		cfg.Addr,
-		cfg.CertPath,
-		cfg.KeyPath,
-		proxyCACertPool,
 		proxyOptions...,
 	)
 
