@@ -10,4 +10,4 @@ directories:
   - path: cf-k8s-logging-fluent
     git:
       url: https://github.com/cloudfoundry/cf-k8s-logging-fluent
-      ref: 7e943d3c0273c2f807812409caa9d3b705f7da8c
+      ref: 550374b941fee74157dcd8f82125edd84f04c96f

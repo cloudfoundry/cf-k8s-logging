@@ -241,7 +241,7 @@ jobs:
           # it available to the next task and dockerhub
             - put: cf-k8s-logging-docker
               params:
-                build: cf-k8s-logging/vendor/cf-k8s-logging-fluent
+                build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
             - put: syslog-server-docker
               params:
                 dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
@@ -422,7 +422,7 @@ jobs:
     - in_parallel:
       - put: cf-k8s-logging-docker
         params:
-          build: cf-k8s-logging/vendor/cf-k8s-logging-fluent
+          build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
       - put: syslog-server-docker
         params:
           dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile

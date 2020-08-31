@@ -23,4 +23,4 @@ buildAndReplaceImage log-cache vendor/log-cache/src cmd/log-cache/Dockerfile log
 buildAndReplaceImage log-cache-gateway vendor/log-cache/src cmd/gateway/Dockerfile log_cache_gateway
 buildAndReplaceImage log-cache-cf-auth-proxy vendor/log-cache/src cmd/cf-auth-proxy/Dockerfile cf_auth_proxy
 buildAndReplaceImage syslog-server vendor/log-cache/src cmd/syslog-server/Dockerfile syslog_server
-buildAndReplaceImage cf-k8s-logging vendor/cf-k8s-logging-fluent Dockerfile fluent
+buildAndReplaceImage cf-k8s-logging vendor/cf-k8s-logging-fluent/fluentd Dockerfile fluent

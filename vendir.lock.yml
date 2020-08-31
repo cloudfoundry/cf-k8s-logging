@@ -6,8 +6,8 @@ directories:
       sha: 359b4774261a929c7911e5619ac41e90c71c5bcd
     path: log-cache
   - git:
-      commitTitle: update fluent to 0.8.0
-      sha: 7e943d3c0273c2f807812409caa9d3b705f7da8c
+      commitTitle: Create NOTICE
+      sha: 550374b941fee74157dcd8f82125edd84f04c96f
     path: cf-k8s-logging-fluent
   path: vendor
 kind: LockConfig
