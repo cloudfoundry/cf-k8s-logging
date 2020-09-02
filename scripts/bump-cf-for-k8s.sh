@@ -8,12 +8,5 @@ BASE_DIR="${SCRIPT_DIR}/.."
 
 pushd "${CF_FOR_K8s_DIR}"
   vendir sync -d config/logging/_ytt_lib/cf-k8s-logging="${BASE_DIR}/config"
-
-  #remove after upstreaming removal of certs
-  sed -i '/^log_cache_metrics:/,+3 d' config/logging/logging.yml
-  sed -i '/^log_cache_ca:/,+3 d' config/logging/logging.yml
-  sed -i '/^log_cache:/,+3 d' config/logging/logging.yml
-  sed -i '/^log_cache_gateway:/,+3 d' config/logging/logging.yml
-  sed -i '/^log_cache_syslog:/,+3 d' config/logging/logging.yml
 popd
 
