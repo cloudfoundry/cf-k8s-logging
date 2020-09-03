@@ -1,2 +1,2 @@
-FROM cloudfoundry/cflinuxfs3
-COPY ./deplab /usr/bin/deplab
+FROM concourse/docker-image-resource:ubuntu
+COPY deplab /usr/bin

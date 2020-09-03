@@ -46,6 +46,15 @@ resources:
     branch: main
     uri: git@github.com:cloudfoundry/cf-k8s-logging
     private_key: ((cf-loggregator-oauth-bot-key))
+    ignore_paths:
+    - ci
+
+- name: cf-k8s-logging-ci
+  type: git
+  source:
+    branch: main
+    uri: git@github.com:cloudfoundry/cf-k8s-logging
+    private_key: ((cf-loggregator-oauth-bot-key))
 
 - name: cf-k8s-logging-github-release
   type: github-release
@@ -60,41 +69,6 @@ resources:
     access_token: ((github-access-token))
     repository: cloudfoundry/cf-k8s-logging
     disable_forks: true
-
-- name: syslog-server-docker
-  type: docker-image
-  source:
-    username: ((logcache-docker.username))
-    password: ((logcache-docker.password))
-    repository: logcache/syslog-server
-
-- name: log-cache-docker
-  type: docker-image
-  source:
-    username: ((logcache-docker.username))
-    password: ((logcache-docker.password))
-    repository: logcache/log-cache
-
-- name: log-cache-gateway-docker
-  type: docker-image
-  source:
-    username: ((logcache-docker.username))
-    password: ((logcache-docker.password))
-    repository: logcache/log-cache-gateway
-
-- name: cf-auth-proxy-docker
-  type: docker-image
-  source:
-    username: ((logcache-docker.username))
-    password: ((logcache-docker.password))
-    repository: logcache/log-cache-cf-auth-proxy
-
-- name: cf-k8s-logging-docker
-  type: docker-image
-  source:
-    username: ((logcache-docker.username))
-    password: ((logcache-docker.password))
-    repository: logcache/cf-k8s-logging
 jobs:
   - name: test-ruby-plugin
     plan:
@@ -220,6 +194,7 @@ jobs:
           - in_parallel:
             - get: runtime-ci
             - get: cf-for-k8s
+            - get: cf-k8s-logging-ci
           - in_parallel:
             - task: delete-cf
               config:
@@ -237,27 +212,12 @@ jobs:
                     gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
 
                     kapp delete -a cf --yes
-          # Puts do an implicit check so this builds the image and immediately makes
-          # it available to the next task and dockerhub
-            - put: cf-k8s-logging-docker
-              params:
-                build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
-            - put: syslog-server-docker
-              params:
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
-                build: cf-k8s-logging/vendor/log-cache/src
-            - put: log-cache-docker
-              params:
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
-                build: cf-k8s-logging/vendor/log-cache/src
-            - put: log-cache-gateway-docker
-              params:
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
-                build: cf-k8s-logging/vendor/log-cache/src
-            - put: cf-auth-proxy-docker
-              params:
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
-                build: cf-k8s-logging/vendor/log-cache/src
+          - task: build-images
+            file: cf-k8s-logging-ci/ci/tasks/build-images.yml
+            privileged: true
+            params:
+              DOCKER_USERNAME: ((logcache-docker.username))
+              DOCKER_PASSWORD: ((logcache-docker.password))
           - task: vendir-logging
             config:
               platform: linux
@@ -265,13 +225,8 @@ jobs:
                 type: docker-image
                 source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
               inputs:
-                - name: cf-k8s-logging-docker
-                - name: syslog-server-docker
-                - name: log-cache-docker
-                - name: log-cache-gateway-docker
-                - name: cf-auth-proxy-docker
                 - name: cf-for-k8s
-                - name: cf-k8s-logging
+                - name: cf-k8s-logging-with-images
               outputs:
               - name: cf-for-k8s-with-logging
                 path: cf-for-k8s
@@ -280,17 +235,7 @@ jobs:
                 args:
                 - -c
                 - |
-                  cd cf-k8s-logging
-                  new_fluent_image_digest=$(cat ../cf-k8s-logging-docker/digest)
-                  new_log_cache_image_digest=$(cat ../log-cache-docker/digest)
-                  new_syslog_image_digest=$(cat ../syslog-server-docker/digest)
-                  new_log_cache_gateway_image_digest=$(cat ../log-cache-gateway-docker/digest)
-                  new_cf_auth_proxy_image_digest=$(cat ../cf-auth-proxy-docker/digest)
-                  sed -i "s| syslog_server:.*| syslog_server: \"logcache/syslog-server@$new_syslog_image_digest\"|" config/values.yml
-                  sed -i "s| log_cache:.*| log_cache: \"logcache/log-cache@$new_log_cache_image_digest\"|" config/values.yml
-                  sed -i "s| log_cache_gateway:.*| log_cache_gateway: \"logcache/log-cache-gateway@$new_log_cache_gateway_image_digest\"|" config/values.yml
-                  sed -i "s| cf_auth_proxy:.*| cf_auth_proxy: \"logcache/log-cache-cf-auth-proxy@$new_cf_auth_proxy_image_digest\"|" config/values.yml
-                  sed -i "s| fluent:.*| fluent: \"logcache/cf-k8s-logging@$new_fluent_image_digest\"|" config/values.yml
+                  cd cf-k8s-logging-with-images
                   CF_FOR_K8s_DIR=../cf-for-k8s ./scripts/bump-cf-for-k8s.sh
 
           - task: install-cf
@@ -328,7 +273,7 @@ jobs:
                   bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
                   echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
                   echo "Configuring DNS..."
-                  cf-for-k8s-with-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
+                  # cf-for-k8s-with-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
 
                   kubectl create -n cf-workloads secret docker-registry registry-credentials \
                         --docker-server=https://gcr.io \
@@ -419,26 +364,12 @@ jobs:
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
-    - in_parallel:
-      - put: cf-k8s-logging-docker
-        params:
-          build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
-      - put: syslog-server-docker
-        params:
-          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
-          build: cf-k8s-logging/vendor/log-cache/src
-      - put: log-cache-docker
-        params:
-          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
-          build: cf-k8s-logging/vendor/log-cache/src
-      - put: log-cache-gateway-docker
-        params:
-          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
-          build: cf-k8s-logging/vendor/log-cache/src
-      - put: cf-auth-proxy-docker
-        params:
-          dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
-          build: cf-k8s-logging/vendor/log-cache/src
+    - task: build-images
+      privileged: true
+      file: cf-k8s-loging-ci/ci/tasks/build-images.yml
+      params:
+        DOCKER_USERNAME: ((logcache-docker.username))
+        DOCKER_PASSWORD: ((logcache-docker.password))
     - task: prepare-release
       config:
         platform: linux
@@ -446,12 +377,7 @@ jobs:
           type: docker-image
           source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
         inputs:
-          - name: cf-k8s-logging-docker
-          - name: syslog-server-docker
-          - name: log-cache-docker
-          - name: log-cache-gateway-docker
-          - name: cf-auth-proxy-docker
-          - name: cf-k8s-logging
+          - name: cf-k8s-logging-with-images
         outputs:
           - name: cf-k8s-logging-release
         params:
@@ -461,18 +387,7 @@ jobs:
           args:
           - -c
           - |
-            pushd cf-k8s-logging
-              new_fluent_image_digest=$(cat ../cf-k8s-logging-docker/digest)
-              new_log_cache_image_digest=$(cat ../log-cache-docker/digest)
-              new_syslog_image_digest=$(cat ../syslog-server-docker/digest)
-              new_log_cache_gateway_image_digest=$(cat ../log-cache-gateway-docker/digest)
-              new_cf_auth_proxy_image_digest=$(cat ../cf-auth-proxy-docker/digest)
-              sed -i "s| syslog_server:.*| syslog_server: \"logcache/syslog-server@$new_syslog_image_digest\"|" config/values.yml
-              sed -i "s| log_cache:.*| log_cache: \"logcache/log-cache@$new_log_cache_image_digest\"|" config/values.yml
-              sed -i "s| log_cache_gateway:.*| log_cache_gateway: \"logcache/log-cache-gateway@$new_log_cache_gateway_image_digest\"|" config/values.yml
-              sed -i "s| cf_auth_proxy:.*| cf_auth_proxy: \"logcache/log-cache-cf-auth-proxy@$new_cf_auth_proxy_image_digest\"|" config/values.yml
-              sed -i "s| fluent:.*| fluent: \"logcache/cf-k8s-logging@$new_fluent_image_digest\"|" config/values.yml
-
+            pushd cf-k8s-logging-with-images
               echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
               mkdir ../cf-k8s-logging-release/globs
               cp config/* ../cf-k8s-logging-release/globs/

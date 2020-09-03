@@ -18,9 +18,10 @@ function buildAndReplaceImage {
     imageRef="$(docker image inspect $REPOSITORY/$image:latest --format '{{index .RepoDigests 0}}')"
     sed -i'' -e "s| $yttValuesRef:.*| $yttValuesRef: \"$imageRef\"|" config/values.yml
 }
+buildAndReplaceImage log-cache vendor/log-cache/src cmd/log-cache/Dockerfile log_cache > /tmp/logcache.txt  &
+buildAndReplaceImage log-cache-gateway vendor/log-cache/src cmd/gateway/Dockerfile log_cache_gateway > /tmp/log-cache-gateway.txt &
+buildAndReplaceImage log-cache-cf-auth-proxy vendor/log-cache/src cmd/cf-auth-proxy/Dockerfile cf_auth_proxy > /tmp/auth-proxy.txt &
+buildAndReplaceImage syslog-server vendor/log-cache/src cmd/syslog-server/Dockerfile syslog_server > /tmp/syslog-server.txt &
+buildAndReplaceImage cf-k8s-logging vendor/cf-k8s-logging-fluent/fluentd Dockerfile fluent > /tmp/fluent.txt &
 
-buildAndReplaceImage log-cache vendor/log-cache/src cmd/log-cache/Dockerfile log_cache
-buildAndReplaceImage log-cache-gateway vendor/log-cache/src cmd/gateway/Dockerfile log_cache_gateway
-buildAndReplaceImage log-cache-cf-auth-proxy vendor/log-cache/src cmd/cf-auth-proxy/Dockerfile cf_auth_proxy
-buildAndReplaceImage syslog-server vendor/log-cache/src cmd/syslog-server/Dockerfile syslog_server
-buildAndReplaceImage cf-k8s-logging vendor/cf-k8s-logging-fluent/fluentd Dockerfile fluent
+wait

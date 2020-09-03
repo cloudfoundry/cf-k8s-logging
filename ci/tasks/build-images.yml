@@ -9,11 +9,14 @@ image_resource:
 
 inputs:
   - name: cf-k8s-logging
-  - name: initial-image
   - name: cf-k8s-logging-ci
 
 outputs:
-  - name: labels
+  - name: cf-k8s-logging-with-images
+    path: cf-k8s-logging
 
+params:
+  DOCKER_USERNAME:
+  DOCKER_PASSWORD:
 run:
-  path: cf-k8s-logging-ci/ci/tasks/build-image-labels.sh
+  path: cf-k8s-logging-ci/ci/tasks/build-images.sh
