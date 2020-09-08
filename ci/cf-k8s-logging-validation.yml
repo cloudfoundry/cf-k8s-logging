@@ -365,9 +365,10 @@ jobs:
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
+    - get: cf-k8s-logging-ci
     - task: build-images
       privileged: true
-      file: cf-k8s-loging-ci/ci/tasks/build-images.yml
+      file: cf-k8s-logging-ci/ci/tasks/build-images.yml
       params:
         DOCKER_USERNAME: ((logcache-docker.username))
         DOCKER_PASSWORD: ((logcache-docker.password))
