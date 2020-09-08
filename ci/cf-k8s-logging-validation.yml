@@ -274,7 +274,7 @@ jobs:
                   bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
                   echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
                   echo "Configuring DNS..."
-                  cf-for-k8s-with-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
+                  cf-k8s-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
 
                   kubectl create -n cf-workloads secret docker-registry registry-credentials \
                         --docker-server=https://gcr.io \
