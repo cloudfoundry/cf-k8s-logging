@@ -212,12 +212,12 @@ jobs:
                     gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
 
                     kapp delete -a cf --yes
-          - task: build-images
-            file: cf-k8s-logging-ci/ci/tasks/build-images.yml
-            privileged: true
-            params:
-              DOCKER_USERNAME: ((logcache-docker.username))
-              DOCKER_PASSWORD: ((logcache-docker.password))
+            - task: build-images
+              file: cf-k8s-logging-ci/ci/tasks/build-images.yml
+              privileged: true
+              params:
+                DOCKER_USERNAME: ((logcache-docker.username))
+                DOCKER_PASSWORD: ((logcache-docker.password))
           - task: vendir-logging
             config:
               platform: linux
