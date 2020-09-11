@@ -7,7 +7,7 @@ directories:
     path: log-cache
   - git:
       commitTitle: prometheus plugin
-      sha: 57d4c407d1f6d474b56860c4b2de87ea067a586e
+      sha: 86fb30eb99baeb7b23e8900d364c08ef93cd9ebc
     path: cf-k8s-logging-fluent
   path: vendor
 kind: LockConfig
