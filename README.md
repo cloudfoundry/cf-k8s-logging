@@ -62,7 +62,7 @@ as they contain the tags listed below under [Log Format](#log-format).
 Logs should be sent to the Fluentd ingress service called
 `fluentd-forwarder-ingress` at port `24224` over the Fluent forwarding
 protocol. This protocol can be implemented using one of the following client libraries:
- 
+
 * https://github.com/fluent/fluent-logger-ruby
 * https://github.com/fluent/fluent-logger-golang
 * https://github.com/fluent/fluent-logger-java
@@ -92,5 +92,14 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 1. Run `./scripts/build-images.sh`, setting $REPOSITORY to a docker
    repository you can push to.
 1. Run `./scripts/bump-cf-for-k8s.sh` .
+    1. Bump cf-for-k8s should add all the kubernetes files needed to run
+       integration tests
 1. Follow cf-for-k8s deployment steps.
 
+## Running Integration Tests
+
+1. Run `./scripts/bump-cf-for-k8s.sh`. -- this sets up test dependencies to be installed
+1. Deploy cf-for-k8s accoding to [the documentation](https://github.com/cloudfoundry/cf-for-k8s/blob/master/docs/deploy.md)
+1. Set the `TEST_API_ENDPOINT` `TEST_USERNAME` `TEST_PASSWORD` environment variables
+1. Optionally, set `TEST_SKIP_SSL` environment variable
+1. run `./hack/run_integration_tests.sh`

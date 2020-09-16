@@ -1,0 +1,8 @@
+#@data/values
+---
+#@overlay/match missing_ok=True
+app_log_destinations:
+#@overlay/append
+- host: syslog-drain
+  transport: tcp
+  port: 8080
