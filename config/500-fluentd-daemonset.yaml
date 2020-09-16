@@ -31,9 +31,10 @@ spec:
             value: "-vvv"
         resources:
           limits:
-            memory: 200Mi
+            cpu: 1
+            memory: 600Mi
           requests:
-            cpu: 100m
+            cpu: 200m
             memory: 200Mi
         volumeMounts:
         - name: fluentd-config

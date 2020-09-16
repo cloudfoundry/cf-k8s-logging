@@ -17,7 +17,8 @@ data:
     <source>
       @type tail
       @id in_tail_container_logs
-      path /var/log/containers/*.log
+      path /var/log/containers/*_cf-workloads_*.log,/var/log/containers/*_cf-workloads-staging_*.log
+      exclude_path /var/log/containers/*istio*.log
       pos_file /var/log/fluentd-containers.log.pos
       tag kubernetes.*
       refresh_interval 1
@@ -43,15 +44,10 @@ data:
 
     <filter kubernetes.**>
       @type kubernetes_metadata
-    </filter>
-
-    <filter kubernetes.**>
-      @type grep
-
-      <exclude>
-        key $.kubernetes.container_name
-        pattern /.*istio.*/
-      </exclude>
+      skip_container_metadata true
+      skip_master_url true
+      skip_namespace_metadata true
+      watch false
     </filter>
 
     <filter kubernetes.**>
@@ -95,5 +91,6 @@ data:
       <buffer>
         @type memory
         flush_mode immediate
+        flush_thread_count 8
       </buffer>
     </match>
