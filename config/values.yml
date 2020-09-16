@@ -2,12 +2,13 @@
 ---
 system_domain: ""
 system_namespace: ""
+app_log_destinations: []
 
 images:
-  log_cache:
-  syslog_server:
-  log_cache_gateway:
-  fluent:
-  cf_auth_proxy:
+  log_cache: ""
+  syslog_server: ""
+  log_cache_gateway: ""
+  fluent: ""
+  cf_auth_proxy: ""
 
 debug: false
