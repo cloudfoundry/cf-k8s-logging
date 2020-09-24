@@ -287,7 +287,7 @@ jobs:
               platform: linux
               image_resource:
                 type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-test-runner}
+                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
               inputs:
                 - name: cf-for-k8s-with-logging
                 - name: env-metadata
@@ -309,7 +309,7 @@ jobs:
               platform: linux
               image_resource:
                 type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-test-runner}
+                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
               inputs:
                 - name: cf-k8s-logging
                 - name: env-metadata
