@@ -1,4 +1,44 @@
 #@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+#@ aggregate_drain_config = ""
+
+#@ for drain in data.values.app_log_destinations:
+#@   if hasattr(drain, "insecure_disable_tls_validation") and hasattr(drain, "transport") and drain.insecure_disable_tls_validation and drain.transport == "tcp":
+#@     assert.fail("transport: tcp and insecure_disable_tls_validation cannot be set for the same app log destination")
+#@   end
+
+#@   if hasattr(drain, "transport") and drain.transport != "tcp" and drain.transport != "tls":
+#@     assert.fail("Unsupported transport: only tcp or tls are allowed")
+#@   end
+
+#@   aggregate_drain_config = aggregate_drain_config + "<store ignore_error>\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  @type syslog_rfc5424\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  host " + drain.host + "\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  port " + str(drain.port) + "\n"
+
+#@   if hasattr(drain, "transport"):
+#@     aggregate_drain_config = aggregate_drain_config + "  transport " + drain.transport + "\n"
+#@   else:
+#@     aggregate_drain_config = aggregate_drain_config + "  transport tls\n"
+#@   end
+
+#@   if hasattr(drain, "insecure_disable_tls_validation") and drain.insecure_disable_tls_validation:
+#@     aggregate_drain_config = aggregate_drain_config + "  insecure true\n"
+#@   end
+
+#@   aggregate_drain_config = aggregate_drain_config + "  <format>\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    @type syslog_rfc5424\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    proc_id_field instance_id\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    app_name_field app_id\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    structured_data_field structured_data\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  </format>\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  <buffer>\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    @type memory\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    flush_mode immediate\n"
+#@   aggregate_drain_config = aggregate_drain_config + "    flush_thread_count 8\n"
+#@   aggregate_drain_config = aggregate_drain_config + "  </buffer>\n"
+#@   aggregate_drain_config = aggregate_drain_config + "</store>\n"
+#@ end
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -6,6 +46,7 @@ metadata:
   name: fluentd-config
   namespace: #@ data.values.system_namespace
 data:
+  aggregate_drains.conf: #@ aggregate_drain_config
   fluentd.conf: |
     # Inputs
     <source>
@@ -77,20 +118,24 @@ data:
     </filter>
 
     <match **>
-      @type syslog_rfc5424
-      host log-cache-syslog
-      port 8082
-      transport tcp
-      <format>
+      @type copy
+      <store ignore_error>
         @type syslog_rfc5424
-        proc_id_field instance_id
-        app_name_field app_id
-        structured_data_field structured_data
-      </format>
+        host log-cache-syslog
+        port 8082
+        transport tcp
+        <format>
+          @type syslog_rfc5424
+          proc_id_field instance_id
+          app_name_field app_id
+          structured_data_field structured_data
+        </format>
 
-      <buffer>
-        @type memory
-        flush_mode immediate
-        flush_thread_count 8
-      </buffer>
+        <buffer>
+          @type memory
+          flush_mode immediate
+          flush_thread_count 8
+        </buffer>
+      </store>
+      @include /fluentd/etc/aggregate_drains.conf
     </match>
