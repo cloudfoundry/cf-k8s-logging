@@ -59,10 +59,11 @@ data:
       @type tail
       @id in_tail_container_logs
       path /var/log/containers/*_cf-workloads_*.log,/var/log/containers/*_cf-workloads-staging_*.log
-      exclude_path /var/log/containers/*istio*.log
+      exclude_path /var/log/containers/*istio*.log,/var/log/containers/*fluentd*.log
       pos_file /var/log/fluentd-containers.log.pos
       tag kubernetes.*
       refresh_interval 1
+      read_from_head true
       <parse>
         @type multi_format
         <pattern>
@@ -75,13 +76,7 @@ data:
           time_format %Y-%m-%dT%H:%M:%S.%N%:z
         </pattern>
       </parse>
-      read_from_head true
     </source>
-
-    # Filters
-    <match kubernetes.var.log.containers.fluentd**>
-      @type null
-    </match>
 
     <filter kubernetes.**>
       @type kubernetes_metadata
@@ -96,7 +91,7 @@ data:
       enable_ruby
       <record>
         app_id ${record.dig("kubernetes", "labels", "cloudfoundry_org/app_guid")}
-        instance_id ${record["kubernetes"]["pod_id"]}
+        instance_id ${record.dig("kubernetes","pod_id")}
         structured_data \[tags@47450 source_type="${record.dig("kubernetes", "labels", "cloudfoundry_org/source_type") == "APP" ? record.dig("kubernetes", "labels", "cloudfoundry_org/source_type") + "/PROC/" + record.dig("kubernetes", "labels", "cloudfoundry_org/process_type")&.upcase : record.dig("kubernetes", "labels", "cloudfoundry_org/source_type")}"\]
       </record>
     </filter>
