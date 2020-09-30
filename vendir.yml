@@ -6,7 +6,7 @@ directories:
   - path: log-cache
     git:
       url: https://github.com/cloudfoundry/log-cache-release
-      ref: v2.8.0
+      ref: f3e55327da593e58b3f11ad2c8268844a6032a3c
   - path: cf-k8s-logging-fluent
     git:
       url: https://github.com/cloudfoundry/cf-k8s-logging-fluent

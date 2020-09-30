@@ -2,11 +2,11 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: Create final release
-      sha: 359b4774261a929c7911e5619ac41e90c71c5bcd
+      commitTitle: Refresh token retuns error...
+      sha: f3e55327da593e58b3f11ad2c8268844a6032a3c
     path: log-cache
   - git:
-      commitTitle: prometheus plugin
+      commitTitle: prometheus plugin...
       sha: 86fb30eb99baeb7b23e8900d364c08ef93cd9ebc
     path: cf-k8s-logging-fluent
   path: vendor

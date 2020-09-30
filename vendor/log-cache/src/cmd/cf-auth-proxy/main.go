@@ -61,12 +61,6 @@ func main() {
 		options...,
 	)
 
-	// try to get our first token key, but bail out if we can't talk to UAA
-	err = uaaClient.RefreshTokenKeys()
-	if err != nil {
-		loggr.Fatalf("failed to fetch token from UAA: %s", err)
-	}
-
 	gatewayURL, err := url.Parse(cfg.LogCacheGatewayAddr)
 	if err != nil {
 		loggr.Fatalf("failed to parse gateway address: %s", err)
@@ -107,7 +101,6 @@ func main() {
 
 	proxyOptions := []CFAuthProxyOption{
 		WithAuthMiddleware(middlewareProvider.Middleware),
-		WithCFAuthProxyBlock(),
 	}
 
 	if cfg.ProxyCAPath != "" {
@@ -147,7 +140,7 @@ func main() {
 		WithAccessMiddleware(accessMiddleware)(proxy)
 	}
 
-	proxy.Start()
+	proxy.Start(uaaClient.RefreshTokenKeys)
 }
 
 func buildUAAClient(cfg *Config, loggr *log.Logger) *http.Client {
