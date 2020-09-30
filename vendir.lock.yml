@@ -6,8 +6,8 @@ directories:
       sha: 359b4774261a929c7911e5619ac41e90c71c5bcd
     path: log-cache
   - git:
-      commitTitle: upgrade fluentd...
-      sha: b65f09c4a4d0098b95ee7815384445c6ffbd54d3
+      commitTitle: prometheus plugin
+      sha: 86fb30eb99baeb7b23e8900d364c08ef93cd9ebc
     path: cf-k8s-logging-fluent
   path: vendor
 kind: LockConfig

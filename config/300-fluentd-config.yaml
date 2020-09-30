@@ -47,6 +47,7 @@ metadata:
   namespace: #@ data.values.system_namespace
 data:
   aggregate_drains.conf: #@ aggregate_drain_config
+  #@yaml/text-templated-strings
   fluentd.conf: |
     # Inputs
     <source>
@@ -76,6 +77,22 @@ data:
           time_format %Y-%m-%dT%H:%M:%S.%N%:z
         </pattern>
       </parse>
+    </source>
+
+    # expose metrics in prometheus format
+    <source>
+      @type prometheus
+      bind 0.0.0.0
+      port (@= data.values.fluentd.prometheus.port @)
+      metrics_path (@= data.values.fluentd.prometheus.path @)
+    </source>
+
+    <source>
+      @type prometheus_output_monitor
+      interval 10
+      <labels>
+        hostname ${hostname}
+      </labels>
     </source>
 
     <filter kubernetes.**>
