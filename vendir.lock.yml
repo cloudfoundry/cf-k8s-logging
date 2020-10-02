@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: Refresh token retuns error...
-      sha: f3e55327da593e58b3f11ad2c8268844a6032a3c
+      commitTitle: Up refresh interval for refreshing uaa token
+      sha: b01db1f867415ea740aeb04ed83e47a94643ac54
     path: log-cache
   - git:
       commitTitle: prometheus plugin...
