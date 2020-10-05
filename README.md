@@ -3,6 +3,47 @@
 cf-k8s-logging contains the portions of cf-for-k8s which enable logging
 outcomes.
 
+## values.yml
+
+### Log Destinations
+
+To send all app logs to a destination via syslog you can setup app log destinations in
+your cf-values.yml file:
+
+```yml
+app_log_destinations:
+#@overlay/append
+- host: <hostname>
+  port: <port_number>
+  transport: <tls/tcp> #defaults to tls
+  insecure_disable_tls_validation: <false/true> #defaults false
+#@overlay/append
+- host: <hostname>
+  port: <port_number>
+  transport: <tls/tcp> #defaults to tls
+  insecure_disable_tls_validation: <false/true> #defaults false
+```
+
+### Debug logging in cf-k8s-logging fluentd
+
+To diagnose issues with Fluentd, you can increase the log level by setting the
+environment variable `FLUENTD_FLAGS` on Fluentd, like so
+```
+env:
+- name: "FLUENTD_FLAGS"
+  value: "-vvv"
+```
+
+`-vvv` is the highest logging level
+
+Another way to see what is being sent is by replacing the output with a stdout
+logger:
+```
+<match **>
+    @type stdout
+</match>
+```
+
 ## API
 
 ### App Containers
@@ -53,22 +94,3 @@ Logs emitted to cf-k8s-logging by system components must include the fields:
 1. Run `./scripts/bump-cf-for-k8s.sh` .
 1. Follow cf-for-k8s deployment steps.
 
-### Debug logging in cf-k8s-logging fluentd
-
-To diagnose issues with Fluentd, you can increase the log level by setting the
-environment variable `FLUENTD_FLAGS` on Fluentd, like so
-```
-env:
-- name: "FLUENTD_FLAGS"
-  value: "-vvv"
-```
-
-`-vvv` is the highest logging level
-
-Another way to see what is being sent is by replacing the output with a stdout
-logger:
-```
-<match **>
-    @type stdout
-</match>
-```
