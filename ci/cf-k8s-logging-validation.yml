@@ -314,7 +314,7 @@ jobs:
                 - name: cf-k8s-logging
                 - name: env-metadata
               run:
-                path: /bin/sh
+                path: /bin/bash
                 args:
                 - -ec
                 - |
