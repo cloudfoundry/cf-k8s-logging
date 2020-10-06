@@ -318,6 +318,9 @@ jobs:
                 args:
                 - -ec
                 - |
+                  export KUBECONFIG=kube-config.yml
+                  gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
+                  gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
                   DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
                   export TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
                   export TEST_USERNAME=admin
@@ -372,6 +375,7 @@ jobs:
       params:
         DOCKER_USERNAME: ((logcache-docker.username))
         DOCKER_PASSWORD: ((logcache-docker.password))
+        DEPLAB: true
     - task: prepare-release
       config:
         platform: linux

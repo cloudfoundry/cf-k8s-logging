@@ -18,5 +18,6 @@ outputs:
 params:
   DOCKER_USERNAME:
   DOCKER_PASSWORD:
+  DEPLAB:
 run:
   path: cf-k8s-logging-ci/ci/tasks/build-images.sh
