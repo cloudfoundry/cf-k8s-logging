@@ -3,11 +3,14 @@ package integration_test
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gexec"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -30,7 +33,7 @@ var _ = Describe("Smoke Tests", func() {
 		appName string
 	)
 
-	BeforeEach(func() {
+	BeforeSuite(func() {
 		apiEndpoint := GetRequiredEnvVar("TEST_API_ENDPOINT")
 		username := GetRequiredEnvVar("TEST_USERNAME")
 		password := GetRequiredEnvVar("TEST_PASSWORD")
@@ -60,9 +63,14 @@ var _ = Describe("Smoke Tests", func() {
 
 		// Enable Docker Feature Flag
 		Eventually(cf.Cf("enable-feature-flag", "diego_docker")).Should(Exit(0))
+
+		// Push a log emitter
+		appName = generator.PrefixedRandomName(NamePrefix, "app")
+		cfPush := cf.Cf("push", appName, "-o", "oratos/logspewer")
+		Eventually(cfPush).Should(Exit(0))
 	})
 
-	AfterEach(func() {
+	AfterSuite(func() {
 		if CurrentGinkgoTestDescription().Failed {
 			printAppReport(appName)
 		}
@@ -75,20 +83,34 @@ var _ = Describe("Smoke Tests", func() {
 		}
 	})
 
-	It("Logs are egressed from an app", func() {
-		appName = generator.PrefixedRandomName(NamePrefix, "app")
+	Context("CF", func() {
+		It("emits logs for an app to log cache", func() {
+			Eventually(func() string {
+				cfLogs := cf.Cf("logs", appName, "--recent")
+				return string(cfLogs.Wait().Out.Contents())
+			}, 2*time.Minute, 2*time.Second).Should(ContainSubstring("Log Message"))
+		})
+	})
 
-		By("pushing an app and checking that the CF CLI command succeeds")
-		cfPush := cf.Cf("push", appName, "-o", "oratos/logspewer")
-		Eventually(cfPush).Should(Exit(0))
+	Context("Kubernetes deployment", func() {
+		It("emits logs for an app to an aggregate drain", func() {
+			By("verifying that the application's logs are available on the ncat server.")
+			Eventually(func() *gbytes.Buffer {
+				session := runCmd("kubectl", "logs", "-n", "cf-system", "deployment/ncat", "-c", "ncat")
+				return session.Out
+			}).Should(gbytes.Say("Log Message"))
 
-		By("verifying that the application's logs are available.")
-		Eventually(func() string {
-			cfLogs := cf.Cf("logs", appName, "--recent")
-			return string(cfLogs.Wait().Out.Contents())
-		}, 2*time.Minute, 2*time.Second).Should(ContainSubstring("Log Message"))
+		})
 	})
 })
+
+func runCmd(name string, args ...string) *gexec.Session {
+	cmd := exec.Command(name, args...)
+	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+	Eventually(session).Should(gexec.Exit(0))
+	return session
+}
 
 func printAppReport(appName string) {
 	if appName == "" {
