@@ -3,10 +3,10 @@ directories:
 - contents:
   - git:
       commitTitle: Create final release
-      sha: 359b4774261a929c7911e5619ac41e90c71c5bcd
+      sha: 847aac3a0a2e04153965adf76d73ff64dfbdd2c5
     path: log-cache
   - git:
-      commitTitle: prometheus plugin
+      commitTitle: prometheus plugin...
       sha: 86fb30eb99baeb7b23e8900d364c08ef93cd9ebc
     path: cf-k8s-logging-fluent
   path: vendor

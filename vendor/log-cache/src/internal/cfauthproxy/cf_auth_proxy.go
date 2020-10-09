@@ -1,6 +1,7 @@
 package cfauthproxy
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
 	"time"
 
 	"code.cloudfoundry.org/log-cache/internal/auth"
@@ -16,18 +18,21 @@ import (
 )
 
 type CFAuthProxy struct {
-	tlsDisabled  bool
-	blockOnStart bool
-	ln           net.Listener
+	tlsDisabled bool
+	ln          net.Listener
+	server      http.Server
+	mu          sync.Mutex
 
-	gatewayURL      *url.URL
-	addr            string
-	certPath        string
-	keyPath         string
-	proxyCACertPool *x509.CertPool
+	gatewayURL        *url.URL
+	addr              string
+	certPath          string
+	keyPath           string
+	proxyCACertPool   *x509.CertPool
+	readinessInterval time.Duration
 
 	authMiddleware   func(http.Handler) http.Handler
 	accessMiddleware func(http.Handler) *auth.AccessHandler
+	promMiddleware   func(http.Handler) http.Handler
 }
 
 func NewCFAuthProxy(gatewayAddr, addr string, opts ...CFAuthProxyOption) *CFAuthProxy {
@@ -42,7 +47,11 @@ func NewCFAuthProxy(gatewayAddr, addr string, opts ...CFAuthProxyOption) *CFAuth
 		authMiddleware: func(h http.Handler) http.Handler {
 			return h
 		},
-		accessMiddleware: auth.NewNullAccessMiddleware(),
+		promMiddleware: func(h http.Handler) http.Handler {
+			return h
+		},
+		accessMiddleware:  auth.NewNullAccessMiddleware(),
+		readinessInterval: 10 * time.Second,
 	}
 
 	for _, o := range opts {
@@ -54,15 +63,6 @@ func NewCFAuthProxy(gatewayAddr, addr string, opts ...CFAuthProxyOption) *CFAuth
 
 // CFAuthProxyOption configures a CFAuthProxy
 type CFAuthProxyOption func(*CFAuthProxy)
-
-// WithCFAuthProxyBlock returns a CFAuthProxyOption that determines if Start
-// launches a go-routine or not. It defaults to launching a go-routine. If
-// this is set, start will block on serving the HTTP endpoint.
-func WithCFAuthProxyBlock() CFAuthProxyOption {
-	return func(p *CFAuthProxy) {
-		p.blockOnStart = true
-	}
-}
 
 func WithCFAuthProxyTLSServer(certPath, keyPath string) CFAuthProxyOption {
 	return func(p *CFAuthProxy) {
@@ -85,6 +85,12 @@ func WithAccessMiddleware(accessMiddleware func(http.Handler) *auth.AccessHandle
 	}
 }
 
+func WithPromMiddleware(promMiddleware func(http.Handler) http.Handler) CFAuthProxyOption {
+	return func(p *CFAuthProxy) {
+		p.promMiddleware = promMiddleware
+	}
+}
+
 // WithCFAuthProxyTLSDisabled returns a CFAuthProxyOption that sets the CFAuthProxy
 // to accept insecure plain text communication
 func WithCFAuthProxyTLSDisabled() CFAuthProxyOption {
@@ -102,41 +108,59 @@ func WithCFAuthProxyCACertPool(certPool *x509.CertPool) CFAuthProxyOption {
 	}
 }
 
-// Start starts the HTTP listener and serves the HTTP server. If the
+func WithCFAuthProxyReadyCheckInterval(interval time.Duration) CFAuthProxyOption {
+	return func(p *CFAuthProxy) {
+		p.readinessInterval = interval
+	}
+}
+
 // CFAuthProxy was initialized with the WithCFAuthProxyBlock option this
 // method will block.
-func (p *CFAuthProxy) Start() {
+func (p *CFAuthProxy) Start(readyChecker func() error) {
+	for err := readyChecker(); err != nil; err = readyChecker() {
+		log.Printf("Not ready to start: %s", err)
+		time.Sleep(p.readinessInterval)
+	}
+
 	ln, err := net.Listen("tcp", p.addr)
 	if err != nil {
 		log.Fatalf("failed to start listener: %s", err)
 	}
 
-	p.ln = ln
-	if p.blockOnStart {
-		p.startServer()
-	}
-
-	go func() {
-		p.startServer()
-	}()
-}
-
-func (p *CFAuthProxy) startServer() {
 	server := http.Server{
-		Handler:   p.accessMiddleware(p.authMiddleware(p.reverseProxy())),
+		Handler:   p.accessMiddleware(p.promMiddleware(p.authMiddleware(p.reverseProxy()))),
 		TLSConfig: sharedtls.NewBaseTLSConfig(),
 	}
 
+	p.mu.Lock()
+	p.ln = ln
+	p.server = server
+	p.mu.Unlock()
+
 	if p.tlsDisabled {
-		log.Fatal(server.Serve(p.ln))
+		log.Fatal(server.Serve(ln))
 	} else {
-		log.Fatal(server.ServeTLS(p.ln, p.certPath, p.keyPath))
+		log.Fatal(server.ServeTLS(ln, p.certPath, p.keyPath))
 	}
+}
+
+func (p *CFAuthProxy) Stop() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	p.server.Shutdown(ctx)
 }
 
 // Addr returns the listener address. This must be called after calling Start.
 func (p *CFAuthProxy) Addr() string {
-	return p.ln.Addr().String()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.ln != nil {
+		return p.ln.Addr().String()
+	}
+	return ""
 }
 
 func (p *CFAuthProxy) reverseProxy() *httputil.ReverseProxy {
