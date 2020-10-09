@@ -79,6 +79,8 @@ spec:
               resource: limits.memory
         - name: MEMORY_LIMIT_PERCENT
           value: "85"
+        - name: MAX_PER_SOURCE
+          value: "1000"
       - name: gateway
         image: #@ data.values.images.log_cache_gateway
         ports:
