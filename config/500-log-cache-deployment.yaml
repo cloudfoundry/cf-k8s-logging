@@ -39,6 +39,8 @@ spec:
           value: #@ "http://capi.{}.svc.cluster.local:80".format(data.values.system_namespace)
         - name: UAA_ADDR
           value: #@ "http://uaa.{}.svc.cluster.local:8080".format(data.values.system_namespace)
+        - name: PROMQL_UNIMPLEMENTED
+          value: "true"
         resources:
           limits:
             cpu: 200m
