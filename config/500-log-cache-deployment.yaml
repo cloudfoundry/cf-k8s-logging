@@ -26,6 +26,12 @@ spec:
         image: #@ data.values.images.cf_auth_proxy
         ports:
           - containerPort: 8083
+        readinessProbe:
+          httpGet:
+            path: /api/v1/info
+            port: 8083
+          failureThreshold: 1
+          periodSeconds: 10
         env:
         - name: LOG_CACHE_GATEWAY_ADDR
           value: http://localhost:8081
