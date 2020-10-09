@@ -2,12 +2,14 @@ package cfauthproxy_test
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"time"
 
 	"code.cloudfoundry.org/log-cache/internal/auth"
 	. "code.cloudfoundry.org/log-cache/internal/cfauthproxy"
@@ -23,7 +25,39 @@ var _ = Describe("CFAuthProxy", func() {
 		defer gateway.Close()
 
 		proxy := newSecureCFAuthProxy(gateway.URL)
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
+
+		resp, err := makeTLSReq(proxy.Addr())
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, _ := ioutil.ReadAll(resp.Body)
+		Expect(body).To(Equal([]byte("Hello World!")))
+	})
+
+	It("doesn't start the api until the readychecker returns nil", func() {
+		gateway := startSecureGateway("Hello World!")
+		defer gateway.Close()
+
+		isReady := make(chan struct{})
+		almostReadyChecker := func() error {
+			select {
+			case <-isReady:
+				return nil
+			default:
+				return errors.New("Not Ready")
+			}
+		}
+
+		proxy := newSecureCFAuthProxy(gateway.URL)
+		defer proxy.Stop()
+		go proxy.Start(almostReadyChecker)
+
+		Consistently(proxy.Addr, time.Second).Should(BeEmpty())
+
+		close(isReady)
+		Eventually(proxy.Addr).ShouldNot(BeEmpty())
 
 		resp, err := makeTLSReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -38,7 +72,8 @@ var _ = Describe("CFAuthProxy", func() {
 		defer gateway.Close()
 
 		proxy := newInsecureCFAuthProxy(gateway.URL)
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -62,7 +97,8 @@ var _ = Describe("CFAuthProxy", func() {
 		testGatewayURL.Scheme = "https"
 
 		proxy := newSecureCFAuthProxy(testGatewayURL.String())
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeTLSReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -83,7 +119,8 @@ var _ = Describe("CFAuthProxy", func() {
 				return middleware
 			}),
 		)
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeTLSReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -105,7 +142,31 @@ var _ = Describe("CFAuthProxy", func() {
 				return auth.NewAccessHandler(middleware, auth.NewNullAccessLogger(), "0.0.0.0", "1234")
 			}),
 		)
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
+
+		resp, err := makeTLSReq(proxy.Addr())
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+		Expect(middlewareCalled).To(BeTrue())
+	})
+
+	It("delegates to the prom middleware", func() {
+		var middlewareCalled bool
+		middleware := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			middlewareCalled = true
+			w.WriteHeader(http.StatusNotFound)
+		})
+
+		proxy := newSecureCFAuthProxy(
+			"https://127.0.0.1",
+			WithPromMiddleware(func(http.Handler) http.Handler {
+				return middleware
+			}),
+		)
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeTLSReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -119,7 +180,8 @@ var _ = Describe("CFAuthProxy", func() {
 			http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {}),
 		)
 		proxy := newSecureCFAuthProxy(testServer.URL)
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeReq(proxy.Addr())
 		Expect(err).NotTo(HaveOccurred())
@@ -132,7 +194,8 @@ var _ = Describe("CFAuthProxy", func() {
 		defer gateway.Close()
 
 		proxy := newSecureCFAuthProxy(gateway.URL, WithCFAuthProxyTLSDisabled())
-		proxy.Start()
+		defer proxy.Stop()
+		startProxy(proxy, alwaysReadyChecker)
 
 		resp, err := makeReq(proxy.Addr())
 		Expect(err).ToNot(HaveOccurred())
@@ -145,6 +208,10 @@ var _ = Describe("CFAuthProxy", func() {
 
 var localhostCerts = testing.GenerateCerts("localhost-ca")
 
+func alwaysReadyChecker() error {
+	return nil
+}
+
 func newSecureCFAuthProxy(gatewayURL string, opts ...CFAuthProxyOption) *CFAuthProxy {
 	parsedURL, err := url.Parse(gatewayURL)
 	if err != nil {
@@ -152,12 +219,20 @@ func newSecureCFAuthProxy(gatewayURL string, opts ...CFAuthProxyOption) *CFAuthP
 	}
 
 	opts = append(opts, WithCFAuthProxyCACertPool(localhostCerts.Pool()))
+	opts = append(opts, WithCFAuthProxyReadyCheckInterval(100*time.Millisecond))
 	opts = append(opts, WithCFAuthProxyTLSServer(localhostCerts.Cert("localhost"), localhostCerts.Key("localhost")))
 	return NewCFAuthProxy(
 		parsedURL.String(),
 		"127.0.0.1:0",
 		opts...,
 	)
+}
+
+func startProxy(proxy *CFAuthProxy, readyChecker func() error) {
+	go proxy.Start(readyChecker)
+	for proxy.Addr() == "" {
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func newInsecureCFAuthProxy(gatewayURL string, opts ...CFAuthProxyOption) *CFAuthProxy {
