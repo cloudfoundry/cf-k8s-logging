@@ -3,11 +3,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: log-cache
+  name: log-cache-api
   namespace: #@ data.values.system_namespace
 spec:
   selector:
-    app: log-cache
+    app: log-cache-api
   ports:
   - protocol: TCP
-    port: 8080
+    port: 8083
+    name: http

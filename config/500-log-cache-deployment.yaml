@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: log-cache
+  name: log-cache-backend
   namespace: #@ data.values.system_namespace
   labels:
     app: log-cache
@@ -22,32 +22,6 @@ spec:
         app: log-cache
     spec:
       containers:
-      - name: cf-auth-proxy
-        image: #@ data.values.images.cf_auth_proxy
-        ports:
-          - containerPort: 8083
-        readinessProbe:
-          httpGet:
-            path: /api/v1/info
-            port: 8083
-          failureThreshold: 1
-          periodSeconds: 10
-        env:
-        - name: LOG_CACHE_GATEWAY_ADDR
-          value: http://localhost:8081
-        - name: CAPI_ADDR
-          value: #@ "http://capi.{}.svc.cluster.local:80".format(data.values.system_namespace)
-        - name: UAA_ADDR
-          value: #@ "http://uaa.{}.svc.cluster.local:8080".format(data.values.system_namespace)
-        - name: PROMQL_UNIMPLEMENTED
-          value: "true"
-        resources:
-          limits:
-            cpu: 200m
-            memory: 200Mi
-          requests:
-            cpu: 15m
-            memory: 100Mi
       - name: syslog-server
         image: #@ data.values.images.syslog_server
         ports:
@@ -81,17 +55,3 @@ spec:
           value: "85"
         - name: MAX_PER_SOURCE
           value: "1000"
-      - name: gateway
-        image: #@ data.values.images.log_cache_gateway
-        ports:
-        - containerPort: 8081
-        env:
-        - name: LOG_CACHE_ADDR
-          value: localhost:8080
-        resources:
-          limits:
-            cpu: 200m
-            memory: 200Mi
-          requests:
-            cpu: 15m
-            memory: 100Mi
