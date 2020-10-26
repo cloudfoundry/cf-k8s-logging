@@ -10,10 +10,10 @@ fluentd:
     port: '24231'
 
 images:
-  log_cache: "logcache/log-cache@sha256:4649a7762fbaf82a88377e7a5faaf1d76837e13b1247d277e18c07777f89917f"
-  syslog_server: "logcache/syslog-server@sha256:1845f4fd718736c2fc3a5ad60f60e4b1c94df808c9c3e395407b368d108ef2f1"
-  log_cache_gateway: "logcache/log-cache-gateway@sha256:a29d0f39dbb92c1526e86390fba001c3b765c40c32e264039b9ca60aff192e7e"
-  fluent: "logcache/cf-k8s-logging@sha256:55e6aa54da1a9e4872fe7b9cacffdd75c986583c34b7bad8576e74bccc8876c3"
-  cf_auth_proxy: "logcache/log-cache-cf-auth-proxy@sha256:c0fe5af7cd0c15cc01f1b1f5b5da96359d770266427deb922d6d6a14e2ab1374"
+  log_cache: ""
+  syslog_server: ""
+  log_cache_gateway: ""
+  fluent: ""
+  cf_auth_proxy: ""
 
 debug: false
