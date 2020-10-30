@@ -1,9 +1,9 @@
 # cf-k8s-logging
 
 cf-k8s-logging contains the portions of cf-for-k8s which enable logging
-outcomes.
+outcomes. See our [public roadmap](https://github.com/cloudfoundry/cf-k8s-logging/projects/1) to find out about our current efforts and future plans.
 
-## values.yml
+## Configuration via values.yml
 
 ### Log Destinations
 
@@ -45,6 +45,8 @@ logger:
 ```
 
 ## API
+
+Application logs can enter the logging system through two different paths:
 
 ### App Containers
 Logs from app containers are automatically ingested and egressed from
