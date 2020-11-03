@@ -17,3 +17,6 @@ images:
   cf_auth_proxy: ""
 
 debug: false
+
+log_cache_api_replicas: 2
+log_cache_replicas: 6

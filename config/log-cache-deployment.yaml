@@ -1,14 +1,16 @@
 #@ load("@ytt:data", "data")
+
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: log-cache-backend
   namespace: #@ data.values.system_namespace
   labels:
     app: log-cache
 spec:
-  replicas: 1
+  replicas: #@ data.values.log_cache_replicas
+  serviceName: log-cache
   selector:
     matchLabels:
       app: log-cache
@@ -37,6 +39,26 @@ spec:
             cpu: 200m
             memory: 100Mi
       - name: log-cache
+        command:
+          - bash
+          - -c
+          - |
+            export NODE_INDEX=$(echo $HOSTNAME | grep -o '[0-9]\+');
+            # update node_addrs
+            NODE_ADDRS=""
+            for i in $( seq 0 $((NUM_REPLICAS-1)) ); do
+              node_addr="log-cache-${i}.log-cache.cf-system.svc.cluster.local:8080";
+              NODE_ADDRS+=",${node_addr}";
+            done;
+            if [ $NODE_INDEX -ge $NUM_REPLICAS ]; then
+              echo "Unexpected pod number $((NODE_INDEX+1)), only $NUM_REPLICAS pods expected. Shutting down..."
+              echo "NUM_REPLICAS environment variable must be set to the number of log-cache pods."
+              exit 1
+            fi;
+
+            export NODE_ADDRS="${NODE_ADDRS}";
+            # end update node_addrs
+            /srv/log-cache
         image: #@ data.values.images.log_cache
         resources:
           limits:
@@ -46,6 +68,8 @@ spec:
             cpu: 500m
             memory: 1500Mi
         env:
+        - name: NUM_REPLICAS
+          value: #@ "{x}".format(x=data.values.log_cache_replicas)
         - name: MEMORY_LIMIT_BYTES
           valueFrom:
             resourceFieldRef:

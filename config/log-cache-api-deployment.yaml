@@ -8,7 +8,7 @@ metadata:
   labels:
     app: log-cache-api
 spec:
-  replicas: 1
+  replicas: #@ data.values.log_cache_api_replicas
   selector:
     matchLabels:
       app: log-cache-api

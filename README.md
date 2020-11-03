@@ -5,6 +5,22 @@ outcomes.
 
 ## values.yml
 
+### Scaling
+There are two main subsystems to consider when scaling logging: frontend and
+backend.
+
+To scale the frontend to handle more requests, update `log_cache_api_replicas` 
+in the values.yml file. 
+
+To scale the backend to handle an increased number of applications and logs, 
+update `log_cache_replicas` in the values.yml file. 
+
+DO NOT update the replica set for the log-cache-backend stateful set without
+updating the env variable `"NUM_REPLICAS"` to match. 
+If `spec.replicas > NUM_REPLICAS`, any additional replicas will not start.  If
+`NUM_REPLICAS > spec.replicas`, log-cache will try to contact a replica that
+doesn't exist, resulting in dropped logs.
+
 ### Log Destinations
 
 To send all app logs to a destination via syslog you can setup app log destinations in
