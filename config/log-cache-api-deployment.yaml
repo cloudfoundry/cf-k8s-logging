@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: log-cache-frontend
+  name: log-cache-api
   namespace: #@ data.values.system_namespace
   labels:
     app: log-cache-api
