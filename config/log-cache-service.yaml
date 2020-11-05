@@ -8,6 +8,7 @@ metadata:
 spec:
   selector:
     app: log-cache
+  clusterIP: None
   ports:
   - protocol: TCP
     port: 8080

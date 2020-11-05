@@ -52,6 +52,7 @@ metadata:
 spec:
   policyTypes:
   - Ingress
+  - Egress
   podSelector:
     matchLabels:
       app: log-cache
@@ -66,6 +67,20 @@ spec:
     - podSelector:
         matchLabels:
           app: fluentd
+      namespaceSelector:
+        matchLabels:
+          cf-for-k8s.cloudfoundry.org/cf-system-ns: ""
+    - podSelector:
+        matchLabels:
+          app: log-cache
+      namespaceSelector:
+        matchLabels:
+          cf-for-k8s.cloudfoundry.org/cf-system-ns: ""
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: log-cache
       namespaceSelector:
         matchLabels:
           cf-for-k8s.cloudfoundry.org/cf-system-ns: ""
