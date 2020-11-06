@@ -214,7 +214,26 @@ jobs:
 
                     kapp delete -a cf --yes
             - task: build-images
-              file: cf-k8s-logging-ci/ci/tasks/build-images.yml
+              config:
+                platform: linux
+                image_resource:
+                  type: docker-image
+                  source:
+                    repository: gcr.io/cff-loggregator/deplab
+                    username: _json_key
+                    password: ((ci_k8s_gcp_service_account_json))
+                inputs:
+                  - name: cf-k8s-logging
+                  - name: cf-k8s-logging-ci
+                outputs:
+                  - name: cf-k8s-logging-with-images
+                    path: cf-k8s-logging
+                params:
+                  DOCKER_USERNAME:
+                  DOCKER_PASSWORD:
+                  DEPLAB:
+                run:
+                  path: cf-k8s-logging-ci/ci/tasks/build-images.sh
               privileged: true
               params:
                 DOCKER_USERNAME: ((logcache-docker.username))
