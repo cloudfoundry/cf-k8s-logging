@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPOSITORY=${REPOSITORY:-logcache}
+REPOSITORY=${REPOSITORY:-cloudfoundry}
 
 function buildAndReplaceImage {
     image=$1
