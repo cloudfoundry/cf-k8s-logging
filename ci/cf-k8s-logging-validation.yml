@@ -9,7 +9,7 @@ resources:
   type: git
   icon: github-box
   source:
-    branch: master
+    branch: main
     uri: https://github.com/cloudfoundry/runtime-ci.git
 
 - name: fluentd-syslog
@@ -151,7 +151,7 @@ jobs:
             gem build fluent-plugin-syslog_rfc5424
             gem push *.gem
 
-  - name: test-log-cache
+  - name: log-cache-unit-tests
     plan:
     - get: log-cache-release
       trigger: true
@@ -171,7 +171,6 @@ jobs:
           - |
             cd log-cache-release/src
             go test -mod=vendor ./...
-
 
   - name: run-tests-on-cf-for-k8s-pr
     public: true
