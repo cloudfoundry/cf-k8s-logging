@@ -236,8 +236,8 @@ jobs:
                   path: cf-k8s-logging-ci/ci/tasks/build-images.sh
               privileged: true
               params:
-                DOCKER_USERNAME: ((logcache-docker.username))
-                DOCKER_PASSWORD: ((logcache-docker.password))
+                DOCKER_USERNAME: ((relint-docker.username))
+                DOCKER_PASSWORD: ((relint-docker.password))
           - task: vendir-logging
             config:
               platform: linux
@@ -393,8 +393,8 @@ jobs:
       privileged: true
       file: cf-k8s-logging-ci/ci/tasks/build-images.yml
       params:
-        DOCKER_USERNAME: ((logcache-docker.username))
-        DOCKER_PASSWORD: ((logcache-docker.password))
+        DOCKER_USERNAME: ((relint-docker.username))
+        DOCKER_PASSWORD: ((relint-docker.password))
         DEPLAB: true
     - task: prepare-release
       config:
