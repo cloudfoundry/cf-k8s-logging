@@ -228,15 +228,13 @@ jobs:
                   - name: cf-k8s-logging-with-images
                     path: cf-k8s-logging
                 params:
-                  DOCKER_USERNAME:
-                  DOCKER_PASSWORD:
-                  DEPLAB:
+                  DOCKER_USERNAME: ((relint-docker.username))
+                  DOCKER_PASSWORD: ((relint-docker.password))
+                  DEPLAB: true
                 run:
+                  path: /bin/bash
                   path: cf-k8s-logging-ci/ci/tasks/build-images.sh
               privileged: true
-              params:
-                DOCKER_USERNAME: ((relint-docker.username))
-                DOCKER_PASSWORD: ((relint-docker.password))
           - task: vendir-logging
             config:
               platform: linux
@@ -389,12 +387,28 @@ jobs:
       resource: cf-k8s-logging-main
     - get: cf-k8s-logging-ci
     - task: build-images
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: gcr.io/cff-loggregator/deplab
+            username: _json_key
+            password: ((ci_k8s_gcp_service_account_json))
+        inputs:
+          - name: cf-k8s-logging
+          - name: cf-k8s-logging-ci
+        outputs:
+          - name: cf-k8s-logging-with-images
+            path: cf-k8s-logging
+        params:
+          DOCKER_USERNAME: ((relint-docker.username))
+          DOCKER_PASSWORD: ((relint-docker.password))
+          DEPLAB: true
+        run:
+          path: /bin/bash
+          path: cf-k8s-logging-ci/ci/tasks/build-images.sh
       privileged: true
-      file: cf-k8s-logging-ci/ci/tasks/build-images.yml
-      params:
-        DOCKER_USERNAME: ((relint-docker.username))
-        DOCKER_PASSWORD: ((relint-docker.password))
-        DEPLAB: true
     - task: prepare-release
       config:
         platform: linux
@@ -406,7 +420,7 @@ jobs:
         outputs:
           - name: cf-k8s-logging-release
         params:
-          RELEASE_VERSION: 0.1.0
+          RELEASE_VERSION: 0.6.0
         run:
           path: /bin/bash
           args:
