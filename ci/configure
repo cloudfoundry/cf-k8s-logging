@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+
+export PROJECT_DIR="$(cd $(dirname $0)/.. && pwd)"
+
+fly -t relint-ci set-pipeline \
+  -p "cf-k8s-logging-validation" \
+  -c "${PROJECT_DIR}/ci/cf-k8s-logging-validation.yml"

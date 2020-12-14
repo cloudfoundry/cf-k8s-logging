@@ -12,6 +12,34 @@ resources:
     branch: main
     uri: https://github.com/cloudfoundry/runtime-ci.git
 
+- name: cf-for-k8s-ci
+  type: git
+  icon: github
+  source:
+    uri: git@github.com:cloudfoundry/cf-for-k8s
+    branch: develop
+    private_key: ((cf_for_k8s_readonly_deploy_key.private_key))
+    paths:
+    - ci/**
+
+- name: ready-pool
+  type: pool
+  icon: pool
+  source:
+    uri: git@github.com:cloudfoundry/relint-ci-pools
+    branch: main
+    pool: k8s-dev/ready
+    private_key: ((relint_ci_pools_readwrite_deploy_key.private_key))
+
+- name: destroy-pool
+  type: pool
+  icon: pool
+  source:
+    uri: git@github.com:cloudfoundry/relint-ci-pools
+    branch: main
+    pool: k8s-dev/destroy
+    private_key: ((relint_ci_pools_readwrite_deploy_key.private_key))
+
 - name: fluentd-syslog
   type: git
   source:
@@ -33,7 +61,7 @@ resources:
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
 
-- name: cf-for-k8s
+- name: cf-for-k8s-develop
   type: git
   source:
     branch: develop
@@ -62,12 +90,12 @@ resources:
     owner: cloudfoundry
     drafts: true
     repository: cf-k8s-logging
-    access_token: ((access-token))
+    access_token: ((logging-github-access-token))
 
 - name: cf-k8s-logging-pr
   type: pull-request
   source:
-    access_token: ((github-access-token))
+    access_token: ((logging-github-access-token))
     repository: cloudfoundry/cf-k8s-logging
     disable_forks: true
 jobs:
@@ -96,7 +124,7 @@ jobs:
     - get: fluentd-syslog
       trigger: true
       passed: ["test-ruby-plugin"]
-    - task: gem bump version
+    - task: gem-bump-version
       config:
         image_resource:
           type: registry-image
@@ -137,7 +165,7 @@ jobs:
         inputs:
         - name: fluentd-syslog-push
         params:
-          API_KEY: ((gem-api-key))
+          API_KEY: ((logging-gem-api-key))
         run:
           path: /bin/bash
           args:
@@ -156,7 +184,7 @@ jobs:
     - get: log-cache-release
       trigger: true
 
-    - task: test-log-cache
+    - task: log-cache-unit-tests
       config:
         image_resource:
           type: registry-image
@@ -174,9 +202,6 @@ jobs:
 
   - name: run-tests-on-cf-for-k8s-pr
     public: true
-    serial: true
-    serial_groups:
-    - basenji
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-pr
@@ -193,48 +218,32 @@ jobs:
         - do: &test-cf-k8s
           - in_parallel:
             - get: runtime-ci
-            - get: cf-for-k8s
+            - get: cf-for-k8s-develop
             - get: cf-k8s-logging-ci
-          - in_parallel:
-            - task: delete-cf
-              config:
-                platform: linux
-                image_resource:
-                  type: docker-image
-                  source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
-                run:
-                  path: /bin/bash
-                  args:
-                  - -ec
-                  - |
-                    export KUBECONFIG=kube-config.yml
-                    gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
-                    gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
-
-                    kapp delete -a cf --yes
-            - task: build-images
-              config:
-                platform: linux
-                image_resource:
-                  type: docker-image
-                  source:
-                    repository: gcr.io/cff-loggregator/deplab
-                    username: _json_key
-                    password: ((ci_k8s_gcp_service_account_json))
-                inputs:
-                  - name: cf-k8s-logging
-                  - name: cf-k8s-logging-ci
-                outputs:
-                  - name: cf-k8s-logging-with-images
-                    path: cf-k8s-logging
-                params:
-                  DOCKER_USERNAME: ((relint-docker.username))
-                  DOCKER_PASSWORD: ((relint-docker.password))
-                  DEPLAB: true
-                run:
-                  path: /bin/bash
-                  path: cf-k8s-logging-ci/ci/tasks/build-images.sh
-              privileged: true
+            - get: cf-for-k8s-ci
+          - task: build-images
+            config:
+              platform: linux
+              image_resource:
+                type: docker-image
+                source:
+                  # could switch to using cf-k8s-eng deplab image
+                  repository: gcr.io/cff-loggregator/deplab
+                  username: _json_key
+                  password: ((logging_gcr_gcp_service_account_json))
+              inputs:
+                - name: cf-k8s-logging
+                - name: cf-k8s-logging-ci
+              outputs:
+                - name: cf-k8s-logging-with-images
+                  path: cf-k8s-logging
+              params:
+                DOCKER_USERNAME: ((dockerhub.username))
+                DOCKER_PASSWORD: ((dockerhub.password))
+                DEPLAB: true
+              run:
+                path: cf-k8s-logging-ci/ci/tasks/build-images.sh
+            privileged: true
           - task: vendir-logging
             config:
               platform: linux
@@ -242,84 +251,40 @@ jobs:
                 type: docker-image
                 source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
               inputs:
-                - name: cf-for-k8s
+                - name: cf-for-k8s-develop
                 - name: cf-k8s-logging-with-images
               outputs:
               - name: cf-for-k8s-with-logging
-                path: cf-for-k8s
+                path: cf-for-k8s-develop
               run:
                 path: /bin/bash
                 args:
                 - -c
                 - |
                   cd cf-k8s-logging-with-images
-                  CF_FOR_K8s_DIR=../cf-for-k8s ./scripts/bump-cf-for-k8s.sh
+                  CF_FOR_K8s_DIR=../cf-for-k8s-develop ./scripts/bump-cf-for-k8s.sh
+
+          - put: ready-pool
+            params:
+              acquire: true
 
           - task: install-cf
-            config:
-              platform: linux
-              image_resource:
-                type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
-              inputs:
-                - name: cf-for-k8s-with-logging
-                - name: cf-k8s-logging
-              outputs:
-              - name: env-metadata
-              params:
-                DNS_ROOT_DOMAIN: ((ci_k8s_domain))
-                DNS_ZONE_NAME: ((ci_k8s_dns_zone_name))
-              run:
-                path: /bin/bash
-                args:
-                - -ec
-                - |
-                  export KUBECONFIG=kube-config.yml
-                  cluster_name=((ci_k8s_gke_cluster_name))
-                  echo '((ci_k8s_gcp_service_account_json))' > gcp-service-account.json
-                  gcloud auth activate-service-account --key-file=gcp-service-account.json --project='((ci_k8s_gcp_project_name))' >/dev/null 2>&1
-                  gcloud container clusters get-credentials "${cluster_name}" --zone '((ci_k8s_gcp_project_zone))' >/dev/null 2>&1
+            file: cf-for-k8s-ci/ci/tasks/install-cf-on-gke/task.yml
+            input_mapping:
+              pool-lock: ready-pool
+              cf-for-k8s: cf-for-k8s-with-logging
+            params:
+              GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
+              GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
+              GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
+              DOMAIN: k8s-dev.relint.rocks
 
-                  export DNS_DOMAIN="${cluster_name}.${DNS_ROOT_DOMAIN}"
-                  cf-for-k8s-with-logging/hack/confirm-network-policy.sh "${cluster_name}" '((ci_k8s_gcp_project_zone))'
-                  echo "Generating install values..."
-                  cf-for-k8s-with-logging/hack/generate-values.sh -d "${DNS_DOMAIN}" -g gcp-service-account.json > cf-install-values.yml
-                  echo "Installing CF..."
-                  ytt -f cf-for-k8s-with-logging/config -f cf-install-values.yml > cf-for-k8s-rendered.yml
-                  kapp deploy -a cf -f cf-for-k8s-rendered.yml -y
-
-                  bosh interpolate --path /cf_admin_password cf-install-values.yml > env-metadata/cf-admin-password.txt
-                  echo "${DNS_DOMAIN}" > env-metadata/dns-domain.txt
-                  echo "Configuring DNS..."
-                  cf-k8s-logging/hack/update-gcp-dns.sh "${DNS_DOMAIN}" "${DNS_ZONE_NAME}"
-
-                  kubectl create -n cf-workloads secret docker-registry registry-credentials \
-                        --docker-server=https://gcr.io \
-                        --docker-username=_json_key \
-                        --docker-email=cf-loggregator@pivotal.io \
-                        --docker-password="$(cat gcp-service-account.json)"
-
-          - task: run-smoke-test
-            config:
-              platform: linux
-              image_resource:
-                type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
-              inputs:
-                - name: cf-for-k8s-with-logging
-                - name: env-metadata
-              run:
-                path: /bin/sh
-                args:
-                - -ec
-                - |
-                  DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
-                  export SMOKE_TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
-                  export SMOKE_TEST_APPS_DOMAIN="apps.${DNS_DOMAIN}"
-                  export SMOKE_TEST_USERNAME=admin
-                  export SMOKE_TEST_PASSWORD=$(cat env-metadata/cf-admin-password.txt)
-                  export SMOKE_TEST_SKIP_SSL=true
-                  cf-for-k8s-with-logging/hack/run-smoke-tests.sh
+          - task: run-smoke-tests
+            file: cf-for-k8s-ci/ci/tasks/run-smoke-tests/task.yml
+            input_mapping:
+              cf-for-k8s: cf-for-k8s-with-logging
+            params:
+              SMOKE_TEST_SKIP_SSL: false
 
           - task: run-logging-tests
             config:
@@ -330,13 +295,14 @@ jobs:
               inputs:
                 - name: cf-k8s-logging
                 - name: env-metadata
+                - name: ready-pool
               run:
                 path: /bin/bash
                 args:
                 - -ec
                 - |
                   gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
-                  gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+                  gcloud container clusters get-credentials "$(cat ready-pool/name)" --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
 
                   DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
                   export TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
@@ -346,21 +312,14 @@ jobs:
                   cf-k8s-logging/hack/run_integration_tests.sh
 
           - task: delete-cf
-            config:
-              platform: linux
-              image_resource:
-                type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
-              run:
-                path: /bin/bash
-                args:
-                - -ec
-                - |
-                  export KUBECONFIG=kube-config.yml
-                  gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
-                  gcloud container clusters get-credentials '((ci_k8s_gke_cluster_name))' --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+            file: cf-for-k8s-ci/ci/tasks/delete-cf/task.yml
+            input_mapping:
+              pool-lock: ready-pool
+            params:
+              GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
+              GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
+              GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
 
-                  kapp delete -a cf --yes
       on_success:
         do:
         - put: cf-k8s-logging-pr
@@ -380,6 +339,15 @@ jobs:
             status: failure
             context: tests
             comment_file: pull-request-comment/comment
+      ensure:
+        do:
+        - put: destroy-pool
+          params:
+            add: ready-pool
+
+        - put: ready-pool
+          params:
+            remove: ready-pool
 
   - name: create-release
     plan:
@@ -387,6 +355,7 @@ jobs:
       resource: cf-k8s-logging-main
     - get: cf-k8s-logging-ci
     - task: build-images
+      privileged: true
       config:
         platform: linux
         image_resource:
@@ -402,13 +371,11 @@ jobs:
           - name: cf-k8s-logging-with-images
             path: cf-k8s-logging
         params:
-          DOCKER_USERNAME: ((relint-docker.username))
-          DOCKER_PASSWORD: ((relint-docker.password))
+          DOCKER_USERNAME: ((dockerhub.username))
+          DOCKER_PASSWORD: ((dockerhub.password))
           DEPLAB: true
         run:
-          path: /bin/bash
           path: cf-k8s-logging-ci/ci/tasks/build-images.sh
-      privileged: true
     - task: prepare-release
       config:
         platform: linux
@@ -442,9 +409,6 @@ jobs:
 
   - name: run-tests-on-cf-for-k8s-main
     public: true
-    serial: true
-    serial_groups:
-    - basenji
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
@@ -453,3 +417,12 @@ jobs:
       trigger: true
       version: every
     - do: *test-cf-k8s
+    ensure:
+      do:
+      - put: destroy-pool
+        params:
+          add: ready-pool
+
+      - put: ready-pool
+        params:
+          remove: ready-pool
