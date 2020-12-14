@@ -93,6 +93,7 @@ resources:
     disable_forks: true
 jobs:
   - name: test-ruby-plugin
+    public: true
     plan:
       - get: fluentd-syslog
         trigger: true
@@ -107,12 +108,13 @@ jobs:
           run:
             path: /bin/bash
             args:
-              - -c
+              - -ec
               - |
                 cd fluentd-syslog
                 bundle install
                 bundle exec rake test
   - name: bump-gem-version
+    public: true
     plan:
     - get: fluentd-syslog
       trigger: true
@@ -131,7 +133,7 @@ jobs:
         run:
           path: /bin/bash
           args:
-          - -c
+          - -ec
           - |
             git config --global user.email "cf-loggregator@pivotal.io"
             git config --global user.name "Log Egress CI"
@@ -144,6 +146,7 @@ jobs:
         repository: fluentd-syslog-commited
 
   - name: release-gem
+    public: true
     plan:
     - get: fluentd-syslog-push
       trigger: true
@@ -162,7 +165,7 @@ jobs:
         run:
           path: /bin/bash
           args:
-          - -c
+          - -ec
           - |
             cd fluentd-syslog-push
             mkdir ~/.gem
@@ -231,7 +234,7 @@ jobs:
               run:
                 path: /bin/bash
                 args:
-                - -c
+                - -ec
                 - |
                   cd cf-k8s-logging-with-images
                   CF_FOR_K8s_DIR=../cf-for-k8s-develop ./scripts/bump-cf-for-k8s.sh
@@ -322,6 +325,7 @@ jobs:
             remove: ready-pool
 
   - name: create-release
+    public: true
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
@@ -363,7 +367,7 @@ jobs:
         run:
           path: /bin/bash
           args:
-          - -c
+          - -ec
           - |
             pushd cf-k8s-logging-with-images
               echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
