@@ -47,13 +47,6 @@ resources:
     uri: git@github.com:cloudfoundry/fluent-plugin-syslog_rfc5424
     private_key: ((cf-loggregator-oauth-bot-key))
 
-- name: log-cache-release
-  type: git
-  source:
-    branch: develop
-    uri: git@github.com:cloudfoundry/log-cache-release
-    private_key: ((cf-loggregator-oauth-bot-key))
-
 - name: fluentd-syslog-push
   type: git
   source:
@@ -178,27 +171,6 @@ jobs:
             bundle install
             gem build fluent-plugin-syslog_rfc5424
             gem push *.gem
-
-  - name: log-cache-unit-tests
-    plan:
-    - get: log-cache-release
-      trigger: true
-
-    - task: log-cache-unit-tests
-      config:
-        image_resource:
-          type: registry-image
-          source: { repository: golang }
-        platform: linux
-        inputs:
-        - name: log-cache-release
-        run:
-          path: /bin/bash
-          args:
-          - -c
-          - |
-            cd log-cache-release/src
-            go test -mod=vendor ./...
 
   - name: run-tests-on-cf-for-k8s-pr
     public: true
