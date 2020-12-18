@@ -224,7 +224,7 @@ jobs:
               platform: linux
               image_resource:
                 type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+                source: {repository: cloudfoundry/cf-for-k8s-ci}
               inputs:
                 - name: cf-for-k8s-develop
                 - name: cf-k8s-logging-with-images
@@ -266,7 +266,7 @@ jobs:
               platform: linux
               image_resource:
                 type: docker-image
-                source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+                source: {repository: cloudfoundry/cf-for-k8s-ci}
               inputs:
                 - name: cf-k8s-logging
                 - name: env-metadata
@@ -357,7 +357,7 @@ jobs:
         platform: linux
         image_resource:
           type: docker-image
-          source: {repository: relintdockerhubpushbot/cf-for-k8s-ci}
+          source: {repository: cloudfoundry/cf-for-k8s-ci}
         inputs:
           - name: cf-k8s-logging-with-images
         outputs:
