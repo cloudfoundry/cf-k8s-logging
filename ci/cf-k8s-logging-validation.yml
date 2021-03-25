@@ -181,7 +181,7 @@ jobs:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-pr
       params:
-        integration_tool: rebase
+        integration_tool: checkout
       trigger: true
       version: every
     - put: cf-k8s-logging-pr
@@ -189,6 +189,8 @@ jobs:
         path: cf-k8s-logging
         status: pending
         context: tests
+      get_params:
+        integration_tool: checkout
     - do:
         - do: &test-cf-k8s
           - in_parallel:
