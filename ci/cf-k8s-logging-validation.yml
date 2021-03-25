@@ -304,6 +304,8 @@ jobs:
             path: cf-k8s-logging
             status: success
             context: tests
+          get_params:
+            integration_tool: checkout
       on_failure:
         do:
         - task: write-pr-check-failure-comment
@@ -316,6 +318,8 @@ jobs:
             status: failure
             context: tests
             comment_file: pull-request-comment/comment
+          get_params:
+            integration_tool: checkout
       ensure:
         do:
         - put: destroy-pool
