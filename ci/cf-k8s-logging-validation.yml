@@ -191,7 +191,8 @@ jobs:
         context: tests
       get_params:
         integration_tool: checkout
-    - do:
+    - try:
+        do:
         - do: &test-cf-k8s
           - in_parallel:
             - get: runtime-ci
@@ -297,38 +298,38 @@ jobs:
               GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
               GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
 
-      on_success:
-        do:
-        - put: cf-k8s-logging-pr
-          params:
-            path: cf-k8s-logging
-            status: success
-            context: tests
-          get_params:
-            integration_tool: checkout
-      on_failure:
-        do:
-        - task: write-pr-check-failure-comment
-          file: runtime-ci/tasks/write-pr-check-failure-comment/task.yml
-          input_mapping:
-            pull-request: cf-k8s-logging
-        - put: cf-k8s-logging-pr
-          params:
-            path: cf-k8s-logging
-            status: failure
-            context: tests
-            comment_file: pull-request-comment/comment
-          get_params:
-            integration_tool: checkout
-      ensure:
-        do:
-        - put: destroy-pool
-          params:
-            add: ready-pool
+        on_success:
+          do:
+          - put: cf-k8s-logging-pr
+            params:
+              path: cf-k8s-logging
+              status: success
+              context: tests
+            get_params:
+              integration_tool: checkout
+        on_failure:
+          do:
+          - task: write-pr-check-failure-comment
+            file: runtime-ci/tasks/write-pr-check-failure-comment/task.yml
+            input_mapping:
+              pull-request: cf-k8s-logging
+          - put: cf-k8s-logging-pr
+            params:
+              path: cf-k8s-logging
+              status: failure
+              context: tests
+              comment_file: pull-request-comment/comment
+            get_params:
+              integration_tool: checkout
+        ensure:
+          do:
+          - put: destroy-pool
+            params:
+              add: ready-pool
 
-        - put: ready-pool
-          params:
-            remove: ready-pool
+          - put: ready-pool
+            params:
+              remove: ready-pool
 
   - name: create-release
     public: true
