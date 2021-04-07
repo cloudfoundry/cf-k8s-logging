@@ -16,7 +16,7 @@ function buildAndReplaceImage {
     docker push $REPOSITORY/$image:latest
 
     imageRef="$(docker image inspect $REPOSITORY/$image:latest --format '{{index .RepoDigests 0}}')"
-    sed -i'' -e "s| $yttValuesRef:.*| $yttValuesRef: \"$imageRef\"|" config/00-values.yml
+    sed -i'' -e "s| $yttValuesRef:.*| $yttValuesRef: \"$imageRef\"|" config/values/images.yml
 }
 buildAndReplaceImage log-cache vendor/log-cache/src cmd/log-cache/Dockerfile log_cache > /tmp/logcache.txt  &
 buildAndReplaceImage log-cache-gateway vendor/log-cache/src cmd/gateway/Dockerfile log_cache_gateway > /tmp/log-cache-gateway.txt &
