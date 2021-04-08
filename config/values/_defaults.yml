@@ -9,11 +9,4 @@ fluentd:
     path: '/metrics'
     port: '24231'
 
-images:
-  log_cache: ""
-  syslog_server: ""
-  log_cache_gateway: ""
-  fluent: ""
-  cf_auth_proxy: ""
-
 debug: false

@@ -1,0 +1,11 @@
+
+#@ load("@ytt:overlay", "overlay")
+#@data/values
+---
+#@overlay/match missing_ok=True
+images:
+  log_cache: ""
+  syslog_server: ""
+  log_cache_gateway: ""
+  fluent: ""
+  cf_auth_proxy: ""
