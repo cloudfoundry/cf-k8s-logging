@@ -8,11 +8,8 @@ function buildAndReplaceImage {
     dockerfile=$3
     yttValuesRef=$4
 
-    docker build -t $REPOSITORY/$image:latest $srcFolder -f $srcFolder/$dockerfile
-    if [ -n "$DEPLAB" ]; then
-        deplab --image $REPOSITORY/$image:latest --git . --output-tar /tmp/$image -t $REPOSITORY/$image:latest
-        docker load -i /tmp/$image
-    fi
+    docker build -t $REPOSITORY/$image:latest $srcFolder -f $srcFolder/$dockerfile --label "org.opencontainers.image.source=https://github.com/cloudfoundry/cf-k8s-logging.git" --label "org.opencontainers.image.revision=$(git rev-parse HEAD)"
+
     docker push $REPOSITORY/$image:latest
 
     imageRef="$(docker image inspect $REPOSITORY/$image:latest --format '{{index .RepoDigests 0}}')"
