@@ -370,7 +370,7 @@ jobs:
         outputs:
           - name: cf-k8s-logging-release
         params:
-          RELEASE_VERSION: 0.6.0
+          RELEASE_VERSION: 0.7.0
         run:
           path: /bin/bash
           args:
