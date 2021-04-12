@@ -205,10 +205,7 @@ jobs:
               image_resource:
                 type: docker-image
                 source:
-                  # could switch to using cf-k8s-eng deplab image
-                  repository: gcr.io/cff-loggregator/deplab
-                  username: _json_key
-                  password: ((logging_gcr_gcp_service_account_json))
+                  repository: cloudfoundry/cf-for-k8s-deplab
               inputs:
                 - name: cf-k8s-logging
                 - name: cf-k8s-logging-ci
@@ -344,9 +341,7 @@ jobs:
         image_resource:
           type: docker-image
           source:
-            repository: gcr.io/cff-loggregator/deplab
-            username: _json_key
-            password: ((ci_k8s_gcp_service_account_json))
+            repository: cloudfoundry/cf-for-k8s-deplab
         inputs:
           - name: cf-k8s-logging
           - name: cf-k8s-logging-ci
