@@ -77,6 +77,41 @@ resources:
     uri: git@github.com:cloudfoundry/cf-k8s-logging
     private_key: ((cf-loggregator-oauth-bot-key))
 
+- name: log-cache-image
+  type: docker-image
+  source:
+    repository: cloudfoundry/log-cache
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
+- name: log-cache-gateway-image
+  type: docker-image
+  source:
+    repository: cloudfoundry/log-cache-gateway
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
+- name: log-cache-cf-auth-proxy-image
+  type: docker-image
+  source:
+    repository: cloudfoundry/log-cache-cf-auth-proxy
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
+- name: syslog-server-image
+  type: docker-image
+  source:
+    repository: cloudfoundry/syslog-server
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
+- name: cf-k8s-logging-image
+  type: docker-image
+  source:
+    repository: cloudfoundry/cf-k8s-logging
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
+
 - name: cf-k8s-logging-github-release
   type: github-release
   source:
@@ -91,6 +126,7 @@ resources:
     access_token: ((logging-github-access-token))
     repository: cloudfoundry/cf-k8s-logging
     disable_forks: true
+
 jobs:
   - name: test-ruby-plugin
     public: true
@@ -202,26 +238,102 @@ jobs:
             - get: cf-k8s-logging-ci
             - get: cf-for-k8s-ci
 
-          - task: build-images
+          - task: rev-parse
             config:
               platform: linux
               image_resource:
-                type: docker-image
+                type: registry-image
                 source:
-                  repository: cloudfoundry/cf-for-k8s-deplab
+                  repository: cloudfoundry/cf-for-k8s-ci
               inputs:
-                - name: cf-k8s-logging
-                - name: cf-k8s-logging-ci
+              - name: cf-k8s-logging
               outputs:
-                - name: cf-k8s-logging-with-images
-                  path: cf-k8s-logging
-              params:
-                DOCKER_USERNAME: ((dockerhub.username))
-                DOCKER_PASSWORD: ((dockerhub.password))
-                DEPLAB: true
+              - name: labels
               run:
-                path: cf-k8s-logging-ci/ci/tasks/build-images.sh
-            privileged: true
+                path: /bin/bash
+                args:
+                - -c
+                - |
+                  set -e
+                  pushd cf-k8s-logging
+                    echo '{"org.opencontainers.image.source": "https://github.com/cloudfoundry/cf-k8s-logging"}' |
+                      jq --arg git_sha $(git rev-parse HEAD) '. + {"org.opencontainers.image.revision": $git_sha}'
+                    > ../labels/labels.json
+                  popd > /dev/null
+
+          - in_parallel:
+            - put: log-cache-image
+              params:
+                build: cf-k8s-logging/vendor/log-cache/src
+                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
+                labels_file: labels/labels.json
+                tag_as_latest: true
+
+            - put: log-cache-gateway-image
+              params:
+                build: cf-k8s-logging/vendor/log-cache/src
+                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
+                labels_file: labels/labels.json
+                tag_as_latest: true
+
+            - put: log-cache-cf-auth-proxy-image
+              params:
+                build: cf-k8s-logging/vendor/log-cache/src
+                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
+                labels_file: labels/labels.json
+                tag_as_latest: true
+
+            - put: syslog-server-image
+              params:
+                build: cf-k8s-logging/vendor/log-cache/src
+                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
+                labels_file: labels/labels.json
+                tag_as_latest: true
+
+            - put: cf-k8s-logging-image
+              params:
+                build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
+                dockerfile: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd/Dockerfile
+                labels_file: labels/labels.json
+                tag_as_latest: true
+
+          - task: update-image-refs
+            config:
+              platform: linux
+              image_resource:
+                type: registry-image
+                source:
+                  repository: cloudfoundry/cf-for-k8s-ci
+              inputs:
+              - name: cf-k8s-logging
+              - name: log-cache-image
+              - name: log-cache-gateway-image
+              - name: log-cache-cf-auth-proxy-image
+              - name: syslog-server-image
+              - name: cf-k8s-logging-image
+              outputs:
+              - name: cf-k8s-logging-with-images
+                path: cf-k8s-logging
+              run:
+                path: /bin/bash
+                args:
+                - -c
+                - |
+                  set -e
+                  function image_ref() {
+                    image_resource="$1"
+                    image_repo="$(cat "${image_resource}/repository")"
+                    image_digest="$(cat "${image_resource}/digest")"
+                    echo "${image_repo}@${image_digest}"
+                  }
+                  pushd cf-k8s-logging
+                    sed -i'' -e "s| log_cache:.*| log_cache: \"$(image_ref ../log-cache-image)\"|" config/values/images.yml
+                    sed -i'' -e "s| log_cache_gateway:.*| log_cache_gateway: \"$(image_ref ../log-cache-gateway-image)\"|" config/values/images.yml
+                    sed -i'' -e "s| cf_auth_proxy:.*| cf_auth_proxy: \"$(image_ref ../log-cache-cf-auth-proxy-image)\"|" config/values/images.yml
+                    sed -i'' -e "s| syslog_server:.*| syslog_server: \"$(image_ref ../syslog-server-image)\"|" config/values/images.yml
+                    sed -i'' -e "s| fluent:.*| fluent: \"$(image_ref ../cf-k8s-logging-image)\"|" config/values/images.yml
+                    cat config/values/images.yml
+                  popd > /dev/null
 
           - task: vendir-logging
             config:
@@ -336,12 +448,26 @@ jobs:
             get_params:
               integration_tool: checkout
 
+  - name: run-tests-on-cf-for-k8s-main
+    public: true
+    plan:
+    - get: cf-k8s-logging
+      resource: cf-k8s-logging-main
+      params:
+        integration_tool: rebase
+      trigger: true
+      version: every
+
+    - do: *test-cf-k8s
+
   - name: create-release
     public: true
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
+
     - get: cf-k8s-logging-ci
+
     - task: build-images
       privileged: true
       config:
@@ -362,6 +488,7 @@ jobs:
           DEPLAB: true
         run:
           path: cf-k8s-logging-ci/ci/tasks/build-images.sh
+
     - task: prepare-release
       config:
         platform: linux
@@ -385,6 +512,7 @@ jobs:
               cp config/* ../cf-k8s-logging-release/globs/
               git rev-parse HEAD > ../cf-k8s-logging-release/commitish
             popd
+
     - put: cf-k8s-logging-github-release
       params:
         name: cf-k8s-logging-release/name
@@ -392,14 +520,3 @@ jobs:
         globs:
         - cf-k8s-logging-release/globs/*
         commitish: cf-k8s-logging-release/commitish
-
-  - name: run-tests-on-cf-for-k8s-main
-    public: true
-    plan:
-    - get: cf-k8s-logging
-      resource: cf-k8s-logging-main
-      params:
-        integration_tool: rebase
-      trigger: true
-      version: every
-    - do: *test-cf-k8s
