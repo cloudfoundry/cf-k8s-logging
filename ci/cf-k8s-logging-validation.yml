@@ -184,6 +184,7 @@ jobs:
         integration_tool: checkout
       trigger: true
       version: every
+
     - put: cf-k8s-logging-pr
       params:
         path: cf-k8s-logging
@@ -191,6 +192,7 @@ jobs:
         context: tests
       get_params:
         integration_tool: checkout
+
     - try:
         do:
         - do: &test-cf-k8s
@@ -199,6 +201,7 @@ jobs:
             - get: cf-for-k8s-develop
             - get: cf-k8s-logging-ci
             - get: cf-for-k8s-ci
+
           - task: build-images
             config:
               platform: linux
@@ -219,6 +222,7 @@ jobs:
               run:
                 path: cf-k8s-logging-ci/ci/tasks/build-images.sh
             privileged: true
+
           - task: vendir-logging
             config:
               platform: linux
@@ -243,57 +247,68 @@ jobs:
             params:
               acquire: true
 
-          - task: install-cf
-            file: cf-for-k8s-ci/ci/tasks/install-cf-on-gke/task.yml
-            input_mapping:
-              pool-lock: ready-pool
-              cf-for-k8s: cf-for-k8s-with-logging
-            params:
-              GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
-              GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
-              GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
-              DOMAIN: k8s-dev.relint.rocks
+          - do:
+            - task: install-cf
+              file: cf-for-k8s-ci/ci/tasks/install-cf-on-gke/task.yml
+              input_mapping:
+                pool-lock: ready-pool
+                cf-for-k8s: cf-for-k8s-with-logging
+              params:
+                GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
+                GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
+                GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
+                DOMAIN: k8s-dev.relint.rocks
 
-          - task: run-smoke-tests
-            file: cf-for-k8s-ci/ci/tasks/run-smoke-tests/task.yml
-            input_mapping:
-              cf-for-k8s: cf-for-k8s-with-logging
-            params:
-              SMOKE_TEST_SKIP_SSL: false
+            - task: run-smoke-tests
+              file: cf-for-k8s-ci/ci/tasks/run-smoke-tests/task.yml
+              input_mapping:
+                cf-for-k8s: cf-for-k8s-with-logging
+              params:
+                SMOKE_TEST_SKIP_SSL: false
 
-          - task: run-logging-tests
-            config:
-              platform: linux
-              image_resource:
-                type: docker-image
-                source: {repository: cloudfoundry/cf-for-k8s-ci}
-              inputs:
-                - name: cf-k8s-logging
-                - name: env-metadata
-                - name: ready-pool
-              run:
-                path: /bin/bash
-                args:
-                - -ec
-                - |
-                  gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
-                  gcloud container clusters get-credentials "$(cat ready-pool/name)" --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
+            - task: run-logging-tests
+              config:
+                platform: linux
+                image_resource:
+                  type: docker-image
+                  source: {repository: cloudfoundry/cf-for-k8s-ci}
+                inputs:
+                  - name: cf-k8s-logging
+                  - name: env-metadata
+                  - name: ready-pool
+                run:
+                  path: /bin/bash
+                  args:
+                  - -ec
+                  - |
+                    gcloud auth activate-service-account --key-file=<(echo '((ci_k8s_gcp_service_account_json))') --project='((ci_k8s_gcp_project_name))' 1>/dev/null 2>&1
+                    gcloud container clusters get-credentials "$(cat ready-pool/name)" --zone '((ci_k8s_gcp_project_zone))' 1>/dev/null 2>&1
 
-                  DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
-                  export TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
-                  export TEST_USERNAME=admin
-                  export TEST_PASSWORD=$(cat env-metadata/cf-admin-password.txt)
-                  export TEST_SKIP_SSL=true
-                  cf-k8s-logging/hack/run_integration_tests.sh
+                    DNS_DOMAIN=$(cat env-metadata/dns-domain.txt)
+                    export TEST_API_ENDPOINT="https://api.${DNS_DOMAIN}"
+                    export TEST_USERNAME=admin
+                    export TEST_PASSWORD=$(cat env-metadata/cf-admin-password.txt)
+                    export TEST_SKIP_SSL=true
+                    cf-k8s-logging/hack/run_integration_tests.sh
 
-          - task: delete-cf
-            file: cf-for-k8s-ci/ci/tasks/delete-cf/task.yml
-            input_mapping:
-              pool-lock: ready-pool
-            params:
-              GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
-              GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
-              GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
+            - task: delete-cf
+              file: cf-for-k8s-ci/ci/tasks/delete-cf/task.yml
+              input_mapping:
+                pool-lock: ready-pool
+              params:
+                GCP_PROJECT_NAME: ((ci_k8s_gcp_project_name))
+                GCP_PROJECT_ZONE: ((ci_k8s_gcp_project_zone))
+                GCP_SERVICE_ACCOUNT_JSON: ((ci_k8s_gcp_service_account_json))
+
+            ensure:
+              do:
+              - put: destroy-pool
+                params:
+                  add: ready-pool
+
+              - put: ready-pool
+                params:
+                  remove: ready-pool
 
         on_success:
           do:
@@ -304,12 +319,14 @@ jobs:
               context: tests
             get_params:
               integration_tool: checkout
+
         on_failure:
           do:
           - task: write-pr-check-failure-comment
             file: runtime-ci/tasks/write-pr-check-failure-comment/task.yml
             input_mapping:
               pull-request: cf-k8s-logging
+
           - put: cf-k8s-logging-pr
             params:
               path: cf-k8s-logging
@@ -318,15 +335,6 @@ jobs:
               comment_file: pull-request-comment/comment
             get_params:
               integration_tool: checkout
-        ensure:
-          do:
-          - put: destroy-pool
-            params:
-              add: ready-pool
-
-          - put: ready-pool
-            params:
-              remove: ready-pool
 
   - name: create-release
     public: true
@@ -395,12 +403,3 @@ jobs:
       trigger: true
       version: every
     - do: *test-cf-k8s
-    ensure:
-      do:
-      - put: destroy-pool
-        params:
-          add: ready-pool
-
-      - put: ready-pool
-        params:
-          remove: ready-pool
