@@ -466,28 +466,7 @@ jobs:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
 
-    - get: cf-k8s-logging-ci
-
-    - task: build-images
-      privileged: true
-      config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: cloudfoundry/cf-for-k8s-deplab
-        inputs:
-          - name: cf-k8s-logging
-          - name: cf-k8s-logging-ci
-        outputs:
-          - name: cf-k8s-logging-with-images
-            path: cf-k8s-logging
-        params:
-          DOCKER_USERNAME: ((dockerhub.username))
-          DOCKER_PASSWORD: ((dockerhub.password))
-          DEPLAB: true
-        run:
-          path: cf-k8s-logging-ci/ci/tasks/build-images.sh
+    - do: *test-cf-k8s
 
     - task: prepare-release
       config:
@@ -509,7 +488,7 @@ jobs:
             pushd cf-k8s-logging-with-images
               echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
               mkdir ../cf-k8s-logging-release/globs
-              cp config/* ../cf-k8s-logging-release/globs/
+              cp config/*.yml config/values/*.yml ../cf-k8s-logging-release/globs/
               git rev-parse HEAD > ../cf-k8s-logging-release/commitish
             popd
 
