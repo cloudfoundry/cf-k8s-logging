@@ -17,9 +17,7 @@ The `run-tests-on-cf-for-k8s-pr` job in particular, watches for PRs and runs the
 branch. This will report back to the PR if the tests are successfully or not. The `run-tests-on-cf-for-k8s-main` job runs on the `main` branch.
 
 ## Release Process
-This publishes a Github release with the config templates after re-running all the validation tests. It could be more efficient to change this to a passed constraint instead.
-
-NOTE: This requires manually updated the `RELEASE_VERSION` variable in the job.
+This publishes a Github release with the config templates after re-running all the validation tests. It could be more efficient to change this to a passed constraint instead. The version is managed by a concourse semver resource and commited to the main branch.
 
 ### How to update dependencies
 cf-k8s-logging requires images from [log-cache-release](https://github.com/cloudfoundry/log-cache-release/) and [cloudfoundy/fluent-plugin-syslog_rfc5424](https://github.com/cloudfoundry/fluent-plugin-syslog_rfc5424). To update these dependencies, update the refs in `vendir.yml`.
@@ -38,4 +36,3 @@ This job bumps the version of the gem's release candidate (i.e. 0.9.0.rc.7 see
 
 #### release-gem
 Builds a new gem and pushes it to https://rubygems.org/gems/fluent-plugin-syslog_rfc5424.
-
