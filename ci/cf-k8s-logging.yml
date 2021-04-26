@@ -488,7 +488,7 @@ jobs:
             pushd cf-k8s-logging-with-images
               echo $RELEASE_VERSION > ../cf-k8s-logging-release/name
               mkdir ../cf-k8s-logging-release/globs
-              cp config/*.yml config/values/*.yml ../cf-k8s-logging-release/globs/
+              cp config/*.yml config/*.yaml config/values/*.yml ../cf-k8s-logging-release/globs/
               git rev-parse HEAD > ../cf-k8s-logging-release/commitish
             popd
 
