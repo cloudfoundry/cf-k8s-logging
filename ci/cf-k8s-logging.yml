@@ -79,35 +79,35 @@ resources:
     private_key: ((cf-loggregator-oauth-bot-key))
 
 - name: log-cache-image
-  type: docker-image
+  type: registry-image
   source:
     repository: cloudfoundry/log-cache
     username: ((dockerhub.username))
     password: ((dockerhub.password))
 
 - name: log-cache-gateway-image
-  type: docker-image
+  type: registry-image
   source:
     repository: cloudfoundry/log-cache-gateway
     username: ((dockerhub.username))
     password: ((dockerhub.password))
 
 - name: log-cache-cf-auth-proxy-image
-  type: docker-image
+  type: registry-image
   source:
     repository: cloudfoundry/log-cache-cf-auth-proxy
     username: ((dockerhub.username))
     password: ((dockerhub.password))
 
 - name: syslog-server-image
-  type: docker-image
+  type: registry-image
   source:
     repository: cloudfoundry/syslog-server
     username: ((dockerhub.username))
     password: ((dockerhub.password))
 
 - name: cf-k8s-logging-image
-  type: docker-image
+  type: registry-image
   source:
     repository: cloudfoundry/cf-k8s-logging
     username: ((dockerhub.username))
@@ -267,47 +267,90 @@ jobs:
                 - -c
                 - |
                   set -e
-                  pushd cf-k8s-logging
-                    echo '{"org.opencontainers.image.source": "https://github.com/cloudfoundry/cf-k8s-logging"}' |
-                      jq --arg git_sha $(git rev-parse HEAD) '. + {"org.opencontainers.image.revision": $git_sha}'
-                    > ../labels/labels.json
-                  popd > /dev/null
+
+                  git_sha="$(cat cf-k8s-logging/.git/ref)"
+
+                  cat << EOF > labels/labels
+                  org.opencontainers.image.source=https://github.com/cloudfoundry/cf-k8s-logging
+                  org.opencontainers.image.revision=${git_sha}
+                  EOF
 
           - in_parallel:
-            - put: log-cache-image
-              params:
-                build: cf-k8s-logging/vendor/log-cache/src
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
-                labels_file: labels/labels.json
-                tag_as_latest: true
+            - do:
+              - task: build-log-cache-image
+                privileged: true
+                config: &build-cf-k8s-logging-images
+                  platform: linux
+                  image_resource:
+                    type: registry-image
+                    source:
+                      repository: vito/oci-build-task
+                  inputs:
+                    - name: cf-k8s-logging
+                    - name: labels
+                  outputs:
+                    - name: image
+                  params:
+                    CONTEXT: ~
+                    DOCKERFILE: ~
+                    LABELS_FILE: ~
+                  run:
+                    path: build
+                params:
+                  CONTEXT: cf-k8s-logging/vendor/log-cache/src
+                  DOCKERFILE: cf-k8s-logging/vendor/log-cache/src/cmd/log-cache/Dockerfile
+                  LABELS_FILE: labels/labels
+              - put: log-cache-image
+                params:
+                  image: image/image.tar
 
-            - put: log-cache-gateway-image
-              params:
-                build: cf-k8s-logging/vendor/log-cache/src
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
-                labels_file: labels/labels.json
-                tag_as_latest: true
+            - do:
+              - task: build-log-gateway-image
+                privileged: true
+                config: *build-cf-k8s-logging-images
+                params:
+                  CONTEXT: cf-k8s-logging/vendor/log-cache/src
+                  DOCKERFILE: cf-k8s-logging/vendor/log-cache/src/cmd/gateway/Dockerfile
+                  LABELS_FILE: labels/labels
+              - put: log-cache-gateway-image
+                params:
+                  image: image/image.tar
 
-            - put: log-cache-cf-auth-proxy-image
-              params:
-                build: cf-k8s-logging/vendor/log-cache/src
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
-                labels_file: labels/labels.json
-                tag_as_latest: true
+            - do:
+              - task: build-log-cache-cf-auth-proxy-image
+                privileged: true
+                config: *build-cf-k8s-logging-images
+                params:
+                  CONTEXT: cf-k8s-logging/vendor/log-cache/src
+                  DOCKERFILE: cf-k8s-logging/vendor/log-cache/src/cmd/cf-auth-proxy/Dockerfile
+                  LABELS_FILE: labels/labels
+              - put: log-cache-cf-auth-proxy-image
+                params:
+                  image: image/image.tar
 
-            - put: syslog-server-image
-              params:
-                build: cf-k8s-logging/vendor/log-cache/src
-                dockerfile: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
-                labels_file: labels/labels.json
-                tag_as_latest: true
+            - do:
+              - task: build-syslog-server-image
+                privileged: true
+                config: *build-cf-k8s-logging-images
+                params:
+                  CONTEXT: cf-k8s-logging/vendor/log-cache/src
+                  DOCKERFILE: cf-k8s-logging/vendor/log-cache/src/cmd/syslog-server/Dockerfile
+                  LABELS_FILE: labels/labels
+              - put: syslog-server-image
+                params:
+                  image: image/image.tar
 
-            - put: cf-k8s-logging-image
-              params:
-                build: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
-                dockerfile: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd/Dockerfile
-                labels_file: labels/labels.json
-                tag_as_latest: true
+            - do:
+              - task: build-cf-k8s-logging-image
+                privileged: true
+                config: *build-cf-k8s-logging-images
+                params:
+                  CONTEXT: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
+                  DOCKERFILE: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd/Dockerfile
+                  LABELS_FILE: labels/labels
+              - put: cf-k8s-logging-image
+                params:
+                  image: image/image.tar
 
           - task: update-image-refs
             config:
