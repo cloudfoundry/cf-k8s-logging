@@ -3,6 +3,13 @@ resource_types:
   type: docker-image
   source:
     repository: teliaoss/github-pr-resource
+# TODO: remove this and revert back to using `registry-image` after Concourse has been upgraded
+# We are relying on this to ensure there is a `repository` file in the image resource which is used for certain tasks
+- name: registry-image-latest
+  type: registry-image
+  source:
+    repository: concourse/registry-image-resource
+    tag: 1.2.1
 
 resources:
 - name: runtime-ci
@@ -79,39 +86,44 @@ resources:
     private_key: ((cf-loggregator-oauth-bot-key))
 
 - name: log-cache-image
-  type: registry-image
+  type: registry-image-latest
   source:
     repository: cloudfoundry/log-cache
     username: ((dockerhub.username))
     password: ((dockerhub.password))
+    tag: latest
 
 - name: log-cache-gateway-image
-  type: registry-image
+  type: registry-image-latest
   source:
     repository: cloudfoundry/log-cache-gateway
     username: ((dockerhub.username))
     password: ((dockerhub.password))
+    tag: latest
 
 - name: log-cache-cf-auth-proxy-image
-  type: registry-image
+  type: registry-image-latest
   source:
     repository: cloudfoundry/log-cache-cf-auth-proxy
     username: ((dockerhub.username))
     password: ((dockerhub.password))
+    tag: latest
 
 - name: syslog-server-image
-  type: registry-image
+  type: registry-image-latest
   source:
     repository: cloudfoundry/syslog-server
     username: ((dockerhub.username))
     password: ((dockerhub.password))
+    tag: latest
 
 - name: cf-k8s-logging-image
-  type: registry-image
+  type: registry-image-latest
   source:
     repository: cloudfoundry/cf-k8s-logging
     username: ((dockerhub.username))
     password: ((dockerhub.password))
+    tag: latest
 
 - name: cf-k8s-logging-github-release
   type: github-release
@@ -279,6 +291,8 @@ jobs:
             - do:
               - task: build-log-cache-image
                 privileged: true
+                output_mapping:
+                  image: log-cache-image-tarball
                 config: &build-cf-k8s-logging-images
                   platform: linux
                   image_resource:
@@ -302,11 +316,13 @@ jobs:
                   LABELS_FILE: labels/labels
               - put: log-cache-image
                 params:
-                  image: image/image.tar
+                  image: log-cache-image-tarball/image.tar
 
             - do:
               - task: build-log-gateway-image
                 privileged: true
+                output_mapping:
+                  image: log-gateway-image-tarball
                 config: *build-cf-k8s-logging-images
                 params:
                   CONTEXT: cf-k8s-logging/vendor/log-cache/src
@@ -314,11 +330,13 @@ jobs:
                   LABELS_FILE: labels/labels
               - put: log-cache-gateway-image
                 params:
-                  image: image/image.tar
+                  image: log-gateway-image-tarball/image.tar
 
             - do:
               - task: build-log-cache-cf-auth-proxy-image
                 privileged: true
+                output_mapping:
+                  image: log-cache-cf-auth-proxy-image-tarball
                 config: *build-cf-k8s-logging-images
                 params:
                   CONTEXT: cf-k8s-logging/vendor/log-cache/src
@@ -326,11 +344,13 @@ jobs:
                   LABELS_FILE: labels/labels
               - put: log-cache-cf-auth-proxy-image
                 params:
-                  image: image/image.tar
+                  image: log-cache-cf-auth-proxy-image-tarball/image.tar
 
             - do:
               - task: build-syslog-server-image
                 privileged: true
+                output_mapping:
+                  image: syslog-server-image-tarball
                 config: *build-cf-k8s-logging-images
                 params:
                   CONTEXT: cf-k8s-logging/vendor/log-cache/src
@@ -338,11 +358,13 @@ jobs:
                   LABELS_FILE: labels/labels
               - put: syslog-server-image
                 params:
-                  image: image/image.tar
+                  image: syslog-server-image-tarball/image.tar
 
             - do:
               - task: build-cf-k8s-logging-image
                 privileged: true
+                output_mapping:
+                  image: cf-k8s-logging-image-tarball
                 config: *build-cf-k8s-logging-images
                 params:
                   CONTEXT: cf-k8s-logging/vendor/cf-k8s-logging-fluent/fluentd
@@ -350,7 +372,7 @@ jobs:
                   LABELS_FILE: labels/labels
               - put: cf-k8s-logging-image
                 params:
-                  image: image/image.tar
+                  image: cf-k8s-logging-image-tarball/image.tar
 
           - task: update-image-refs
             config:
