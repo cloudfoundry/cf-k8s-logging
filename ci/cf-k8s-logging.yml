@@ -149,7 +149,7 @@ resources:
     private_key: ((cf_k8s_logging_readwrite_deploy_key.private_key))
     git_user: "relint-ci <cf-release-integration@pivotal.io>"
     file: version
-    initial_version: 0.7.0
+    initial_version: 0.8.0
 
 jobs:
   - name: test-ruby-plugin
@@ -542,10 +542,7 @@ jobs:
     plan:
     - get: cf-k8s-logging
       resource: cf-k8s-logging-main
-
     - get: cf-k8s-logging-version
-      params:
-        bump: minor
 
     - do: *test-cf-k8s
 
