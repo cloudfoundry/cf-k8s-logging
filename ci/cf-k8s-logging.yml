@@ -84,6 +84,8 @@ resources:
     branch: main
     uri: git@github.com:cloudfoundry/cf-k8s-logging
     private_key: ((cf-loggregator-oauth-bot-key))
+    paths:
+    - ci/**
 
 - name: log-cache-image
   type: registry-image-latest
