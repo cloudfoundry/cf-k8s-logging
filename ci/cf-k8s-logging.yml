@@ -265,6 +265,8 @@ jobs:
             - get: cf-for-k8s-ci
 
           - task: rev-parse
+            input_mapping:
+              cf-k8s-logging: cf-k8s-logging-ci
             config:
               platform: linux
               image_resource:
