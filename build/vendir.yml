@@ -1,0 +1,17 @@
+---
+apiVersion: vendir.k14s.io/v1alpha1
+kind: Config
+minimumRequiredVersion: 0.11.0
+directories:
+- path: sources/cf-k8s-logging-fluent
+  contents:
+  - path: .
+    git:
+      url: https://github.com/cloudfoundry/cf-k8s-logging-fluent.git
+      ref: 35b578f86027750372852635a3a291f4caf04e09
+- path: sources/logging
+  contents:
+  - path: .
+    git:
+      url: https://github.com/cloudfoundry/cf-k8s-logging
+      ref: 0.7.0

@@ -1,0 +1,11 @@
+#@data/values
+---
+system_domain: system.cf.example.com
+system_namespace: cf-system
+
+images:
+  log_cache: cloudfoundry/log-cache
+  syslog_server: cloudfoundry/syslog-server
+  log_cache_gateway: cloudfoundry/log-cache-gateway
+  fluent: cloudfoundry/cf-k8s-logging
+  cf_auth_proxy: cloudfoundry/log-cache-cf-auth-proxy
