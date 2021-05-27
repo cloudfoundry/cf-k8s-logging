@@ -5,7 +5,7 @@ kind: Config
 minimumRequiredVersion: 0.28.0
 sources:
 - imageRepo: cloudfoundry/log-cache
-  path: sources/logging/vendor/log-cache/src
+  path: ../vendor/log-cache/src
   pack:
     build:
       builder: paketobuildpacks/builder:tiny
@@ -20,7 +20,7 @@ sources:
       - #@ "BP_OCI_SOURCE={}".format(data.values.git_url)
 
 - imageRepo: cloudfoundry/log-cache-gateway
-  path: sources/logging/vendor/log-cache/src
+  path: ../vendor/log-cache/src
   pack:
     build:
       builder: paketobuildpacks/builder:tiny
@@ -35,7 +35,7 @@ sources:
       - #@ "BP_OCI_SOURCE={}".format(data.values.git_url)
 
 - imageRepo: cloudfoundry/log-cache-cf-auth-proxy
-  path: sources/logging/vendor/log-cache/src
+  path: ../vendor/log-cache/src
   pack:
     build:
       builder: paketobuildpacks/builder:tiny
@@ -50,7 +50,7 @@ sources:
       - #@ "BP_OCI_SOURCE={}".format(data.values.git_url)
 
 - imageRepo: cloudfoundry/syslog-server
-  path: sources/logging/vendor/log-cache/src
+  path: ../vendor/log-cache/src
   pack:
     build:
       builder: paketobuildpacks/builder:tiny
@@ -65,7 +65,7 @@ sources:
       - #@ "BP_OCI_SOURCE={}".format(data.values.git_url)
 
 - imageRepo: cloudfoundry/cf-k8s-logging
-  path: sources/logging/vendor/cf-k8s-logging-fluent/fluentd
+  path: ../vendor/cf-k8s-logging-fluent/fluentd
   docker:
     build:
       rawOptions:
