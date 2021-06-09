@@ -27,6 +27,8 @@ spec:
         ports:
         - containerPort: 8082
         env:
+        - name: SYSLOG_PORT
+          value: "8082"
         - name: LOG_CACHE_ADDR
           value: localhost:8080
         resources:
@@ -46,6 +48,10 @@ spec:
             cpu: 500m
             memory: 1500Mi
         env:
+        - name: ADDR
+          value: ":8080"
+        - name: ENV_DIR
+          value: "/srv/conf.d"
         - name: MEMORY_LIMIT_BYTES
           valueFrom:
             resourceFieldRef:

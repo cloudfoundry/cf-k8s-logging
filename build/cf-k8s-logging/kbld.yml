@@ -4,8 +4,8 @@ apiVersion: kbld.k14s.io/v1alpha1
 kind: Config
 minimumRequiredVersion: 0.28.0
 sources:
-- imageRepo: cloudfoundry/cf-k8s-networking-fluentbit
-  path: ../vendor/cf-k8s-logging-fluent/fluent-bit
+- imageRepo: cloudfoundry/cf-k8s-logging
+  path: ../vendor/cf-k8s-logging-fluent/fluentd
   docker:
     build:
       rawOptions:
@@ -15,5 +15,5 @@ sources:
       - #@ "org.opencontainers.image.source={}".format(data.values.git_url)
 
 destinations:
-- imageRepo: cloudfoundry/cf-k8s-networking-fluentbit
-  newImage: index.docker.io/cloudfoundry/cf-k8s-networking-fluentbit
+- imageRepo: cloudfoundry/cf-k8s-logging
+  newImage: index.docker.io/cloudfoundry/cf-k8s-logging
